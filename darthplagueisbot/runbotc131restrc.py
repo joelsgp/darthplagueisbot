@@ -33,8 +33,7 @@ def findt(Text, Type):
 
 #function to log activity to avoid duplicate comments
 def log(ID):
-    with environ['actions'] as ActRecord:
-        ActRecord += '\\' + str(ID)
+    environ['actions'] += '\\' + str(ID)
 
 #function to increment and output number of posts scanned so far
 def progress():
