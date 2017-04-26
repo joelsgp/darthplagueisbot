@@ -44,9 +44,6 @@ def progress():
     if Scanned % 10 == 0:
         print(str(Scanned) + ' comments scanned.')
         Beep(125, 250)
-    if Scanned == 100:
-        print('Ending iteration')
-        exit()
 
 #fetch details from environmental variables
 BotA = {'ClientID': environ['ClientID'],
@@ -71,9 +68,15 @@ Tragedy = 'I thought not. It\'s not a story the Jedi would tell you. It\'s a Sit
 Scanned = 0
 Record = environ['actions']
 while True:
-    for comment in subreddit.stream.comments():
+    for comment in subreddit.comments():
         try:
+            if Scanned == 0:
+                firstscanned = str(comment)
             progress()
+            if str(comment) in environ['lastscanned']:
+                envrion['lastscanned'] = firstscanned
+                print('Ending iteration')
+                exit()
             if findt(comment.body, 1) and not str(comment) in Record and not findmatch(comment.body, Tragedy, 66, 1):
                 Beep(250, 250)
                 print('')
