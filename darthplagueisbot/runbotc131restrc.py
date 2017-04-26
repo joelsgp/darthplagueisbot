@@ -1,6 +1,5 @@
 import praw
 import sys
-from winsound import Beep
 from time import sleep
 from os import environ
 
@@ -43,7 +42,6 @@ def progress():
     Scanned += 1
     if Scanned % 10 == 0:
         print(str(Scanned) + ' comments scanned.')
-        Beep(125, 250)
 
 #fetch details from environmental variables
 BotA = {'ClientID': environ['ClientID'],
@@ -78,7 +76,6 @@ while True:
                 print('Ending iteration')
                 exit()
             if findt(comment.body, 1) and not str(comment) in Record and not findmatch(comment.body, Tragedy, 66, 1):
-                Beep(250, 250)
                 print('')
                 print(comment)
                 print(comment.body)
@@ -96,9 +93,4 @@ while True:
                 sleep(60)
                 Time -= 1
                 print(str(Time) + ' minute(s) left.')
-                Beep(250, 125)
-        except:
-            print('ERROR')
-            e = sys.exc_info()
-            print(e)
             
