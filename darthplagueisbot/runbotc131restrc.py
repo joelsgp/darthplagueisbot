@@ -2,6 +2,7 @@ import praw
 import sys
 from time import sleep
 from os import environ
+import bmemcached
 
 #function to check percentage match
 def findmatch(Text, Object, PercForMatch, WhichData):
@@ -31,9 +32,13 @@ def findt(Text, Type):
     Tragedy = 'Did you ever hear the tragedy of Darth Plagueis the wise'
     return findmatch(Text, Tragedy, 73, Type)
 
+#initialise cache
+Cache = bmemcached.Client(environ.get('MEMCACHEDCLOUD_SERVERS').split(','),
+                          environ.get('MEMCACHEDCLOUD_USERNAME'),
+                          environ.get('MEMCACHEDCLOUD_PASSWORD'))
 #function to log activity to avoid duplicate comments
 def log(ID):
-    environ['actions'] += '\\' + str(ID)
+    Cache.set('actions', Cache.get('actions')  + '\\' + str(ID))
 
 #function to increment and output number of posts scanned so far
 def progress():
@@ -63,18 +68,17 @@ Tragedy = 'I thought not. It\'s not a story the Jedi would tell you. It\'s a Sit
 
 #run bot
 Scanned = 0
-Record = environ['actions']
 while True:
     for comment in subreddit.comments():
         try:
             if Scanned == 0:
                 firstscanned = str(comment)
             progress()
-            if str(comment) in environ['lastscanned']:
-                envrion['lastscanned'] = firstscanned
+            if str(comment) in Cache.get('lastscanned'):
+                Cache.set('lastscanned', firstscanned)
                 print('Ending iteration')
                 exit()
-            if findt(comment.body, 1) and not str(comment) in Record and not findmatch(comment.body, Tragedy, 66, 1):
+            if findt(comment.body, 1) and not str(comment) in Cache.get('actions') and not findmatch(comment.body, Tragedy, 66, 1):
                 print('')
                 print(comment)
                 print(comment.body)
