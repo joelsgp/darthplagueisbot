@@ -38,7 +38,7 @@ Cache = bmemcached.Client(environ.get('MEMCACHEDCLOUD_SERVERS').split(','),
                           environ.get('MEMCACHEDCLOUD_PASSWORD'))
 #function to log activity to avoid duplicate comments
 def log(ID):
-    Cache.set('actions', Cache.get('actions')  + '\\' + str(ID))
+    Cache.set('actions', Cache.get('actions') + [str(ID)])
 
 #function to increment and output number of posts scanned so far
 def progress():
