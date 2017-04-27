@@ -11,7 +11,7 @@ def findmatch(Text, Object, PercForMatch, WhichData):
     
     OWords = Object.split()
     
-    PercPerWord = (1 / len(OWords)) * 100
+    PercPerWord = (1 / float(len(OWords))) * 100
 
     MatchPerc = 0
     for i in range(len(OWords)):
