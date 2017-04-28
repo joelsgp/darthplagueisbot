@@ -97,4 +97,8 @@ while True:
                 sleep(60)
                 Time -= 1
                 print(str(Time) + ' minute(s) left.')
+        except:
+            print('ERROR')
+            e = sys.exc_info()
+            print(e)
             
