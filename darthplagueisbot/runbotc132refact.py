@@ -58,7 +58,7 @@ def progress():
 BotA = {'ClientID': environ['ClientID'],
         'ClientSecret': environ['ClientSecret'],
         'Password': environ['Password'],
-        'UserAgent': 'python3.6.1:darthplagueisbot:v1.3.1 (by /u/Sgp15)',
+        'UserAgent': 'python3.6.1:darthplagueisbot:v1.3.2 (by /u/Sgp15)',
         'Username': environ['Username']}
 
 #initialise reddit object with details
