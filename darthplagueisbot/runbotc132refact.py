@@ -79,7 +79,7 @@ while True:
     for comment in subreddit.stream.comments():
         try:
             progress()
-            if findt(comment.body, 1) and wordmatch(str.lower(comment.body), 'plagueis') and not str(comment) in Cache.get('actions') and not findmatch(comment.body, Tragedy, 66, 1):
+            if findt(comment.body, 1) and wordmatch(str(comment.body).lower(), 'plagueis') and not str(comment) in Cache.get('actions') and not findmatch(comment.body, Tragedy, 66, 1):
                 print('')
                 print(comment)
                 print(comment.body)
