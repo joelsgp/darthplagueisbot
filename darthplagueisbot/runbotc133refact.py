@@ -46,13 +46,16 @@ Cache = bmemcached.Client(environ.get('MEMCACHEDCLOUD_SERVERS').split(','),
 #function to log activity to avoid duplicate comments
 def log(ID):
     Cache.set('actions', Cache.get('actions') + [str(ID)])
+    Cache.set('Matches', Cache.get('Matches') + 1)
 
-#function to increment and output number of posts scanned so far
+#function to increment, output and log number of posts scanned so far
+Scanned = Cache.get('Scanned')
 def progress():
     global Scanned
     Scanned += 1
     if Scanned % 10 == 0:
         print(str(Scanned) + ' comments scanned.')
+        Cache.set('Scanned', Scanned)
 
 #fetch details from environmental variables
 BotA = {'ClientID': environ['ClientID'],
@@ -74,7 +77,6 @@ subreddit = reddit.subreddit('PrequelMemes')
 Tragedy = 'I thought not. It\'s not a story the Jedi would tell you. It\'s a Sith legend. Darth Plagueis was a Dark Lord of the Sith, so powerful and so wise he could use the Force to influence the midichlorians to create life... He had such a knowledge of the dark side that he could even keep the ones he cared about from dying. The dark side of the Force is a pathway to many abilities some consider to be unnatural. He became so powerful... the only thing he was afraid of was losing his power, which eventually, of course, he did. Unfortunately, he taught his apprentice everything he knew, then his apprentice killed him in his sleep. It\'s ironic he could save others from death, but not himself.'
 
 #run bot
-Scanned = 0
 while True:
     for comment in subreddit.stream.comments():
         try:
