@@ -73,24 +73,27 @@ while True:
     #start reading comment stream
     for comment in subreddit.stream.comments():
         try:
+            #increment 'comments checked' counter by 1
             progress()
+            #ignore unknown unicode characters to avoid errors
+            CommentBody = comment.body.encode('ascii', 'replace')
             #check for general match,
             #check for essential terms,
             #check comment has not been replied to already,
             #check comment is not the wrong phrase
-            if (findt(comment.body, 1) and
-                wordmatch(str(comment.body).lower(), 'plagueis') and
-                wordmatch(str(comment.body).lower(), 'tragedy') and
+            if (findt(CommentBody, 1) and
+                wordmatch(CommentBody.lower(), 'plagueis') and
+                wordmatch(CommentBody.lower(), 'tragedy') and
                 not str(comment) in Cache.get('actions') and
-                not SequenceMatcher(None, Tragedy, comment.body).ratio() > 0.66):
+                not SequenceMatcher(None, Tragedy, CommentBody).ratio() > 0.66):
                 
                 #newline
                 print('')
                 #display id, body, author and match percentage of comment
                 print(comment)
-                print(comment.body)
+                print(CommentBody)
                 print(comment.author)
-                print(findt(comment.body, 0))
+                print(findt(CommentBody, 0))
                 #reply to comment
                 comment.reply(Tragedy)
                 #add comment to list of comments that have been replied to
