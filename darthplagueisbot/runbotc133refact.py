@@ -44,7 +44,7 @@ def progress():
     #add 1 to 'Scanned'
     Scanned += 1
     #if 'Scanned' is a multiple of 10, dislay it and record it to cache
-    if Scanned % 10 == 0:
+    if Scanned % 100 == 0:
         print(str(Scanned) + ' comments scanned.')
         Cache.set('Scanned', Scanned)
 
