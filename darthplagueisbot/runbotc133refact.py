@@ -112,6 +112,10 @@ while True:
                 sleep(60)
                 Time -= 1
                 print(str(Time) + ' minute(s) left.')
+        #handler for error thrown when connection resets
+        except prawcore.exceptions.RequestException as err:
+            print(str(err))
+            print('Connection reset.')
         #generic error handler
         except:
             print('ERROR')
