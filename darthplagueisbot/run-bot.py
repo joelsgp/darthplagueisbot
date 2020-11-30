@@ -1,7 +1,7 @@
 import sys
-from time import sleep
+import time
+import difflib
 from os import environ
-from difflib import SequenceMatcher
 
 import praw
 import prawcore
@@ -12,8 +12,8 @@ import bmemcached
 def find_in_text(text, behaviour):
     trigger = 'Did you ever hear the tragedy of Darth Plagueis the wise'
     if behaviour == 0:
-        return SequenceMatcher(None, trigger, text).ratio()
-    elif SequenceMatcher(None, trigger, text).ratio() > 0.8:
+        return difflib.SequenceMatcher(None, trigger, text).ratio()
+    elif difflib.SequenceMatcher(None, trigger, text).ratio() > 0.8:
         return True
     else:
         return False
@@ -26,7 +26,7 @@ def word_match(text, target_word):
     # check each word
     for j in range(len(text_words)):
         # if word is more than 80% match, return 'True'
-        if SequenceMatcher(None, target_word, text_words[j]).ratio() > 0.8:
+        if difflib.SequenceMatcher(None, target_word, text_words[j]).ratio() > 0.8:
             return True
 
 
@@ -103,7 +103,7 @@ while True:
                         word_match(comment_body.lower(), 'plagueis') and
                         word_match(comment_body.lower(), 'tragedy') and
                         not str(comment) in memcache.get('actions') and
-                        not SequenceMatcher(None, TRAGEDY, comment_body).ratio() > 0.66):
+                        not difflib.SequenceMatcher(None, TRAGEDY, comment_body).ratio() > 0.66):
                     # newline
                     print('')
                     # display id, body, author and match percentage of comment
@@ -126,7 +126,7 @@ while True:
                 Time = int(WaitTime)
                 # display time remaining every minute
                 for i in range(Time):
-                    sleep(60)
+                    time.sleep(60)
                     Time -= 1
                     print(str(Time) + ' minute(s) left.')
             # generic error handler
