@@ -9,80 +9,80 @@ import bmemcached
 
 
 # function to search for the phrase
-def findt(Text, Type):
-    Trigger = 'Did you ever hear the tragedy of Darth Plagueis the wise'
-    if Type == 0:
-        return SequenceMatcher(None, Trigger, Text).ratio()
-    elif SequenceMatcher(None, Trigger, Text).ratio() > 0.8:
+def find_in_text(text, behaviour):
+    trigger = 'Did you ever hear the tragedy of Darth Plagueis the wise'
+    if behaviour == 0:
+        return SequenceMatcher(None, trigger, text).ratio()
+    elif SequenceMatcher(None, trigger, text).ratio() > 0.8:
         return True
     else:
         return False
 
 
 # function to search for specific words using difflib
-def wordmatch(Text, Object):
+def word_match(text, target_word):
     # split string into individual words
-    TWords = Text.split()
+    text_words = text.split()
     # check each word
-    for i in range(len(TWords)):
+    for j in range(len(text_words)):
         # if word is more than 80% match, return 'True'
-        if SequenceMatcher(None, Object, TWords[i]).ratio() > 0.8:
+        if SequenceMatcher(None, target_word, text_words[j]).ratio() > 0.8:
             return True
 
 
-# initialise cache using details in premade environmental variable
-Cache = bmemcached.Client(environ.get('MEMCACHEDCLOUD_SERVERS').split(','),
-                          environ.get('MEMCACHEDCLOUD_USERNAME'),
-                          environ.get('MEMCACHEDCLOUD_PASSWORD'))
+# initialise cache using details in environment variables
+memcache = bmemcached.Client(environ.get('MEMCACHEDCLOUD_SERVERS').split(','),
+                             environ.get('MEMCACHEDCLOUD_USERNAME'),
+                             environ.get('MEMCACHEDCLOUD_PASSWORD'))
 
 
 # function to log activity to avoid duplicate comments
-def log(ID):
+def log(comment_id):
     # add id to log
-    Cache.set('actions', Cache.get('actions') + [str(ID)])
+    memcache.set('actions', memcache.get('actions') + [str(comment_id)])
     # add 1 to 'Matches'
-    Cache.set('Matches', Cache.get('Matches') + 1)
+    memcache.set('Matches', memcache.get('Matches') + 1)
 
 
 # function to increment, output and log number of posts scanned so far
-Scanned = Cache.get('Scanned')
+scanned = memcache.get('scanned')
 
 
 def progress():
-    global Scanned
-    # add 1 to 'Scanned'
-    Scanned += 1
-    # if 'Scanned' is a multiple of 10, dislay it and record it to cache
-    if Scanned % 100 == 0:
-        print(str(Scanned) + ' comments scanned.')
-        Cache.set('Scanned', Scanned)
+    global scanned
+    # add 1 to 'scanned'
+    scanned += 1
+    # if 'scanned' is a multiple of 10, display it and record it to cache
+    if scanned % 100 == 0:
+        print(str(scanned) + ' comments scanned.')
+        memcache.set('scanned', scanned)
 
 
 # fetch details from environmental variables
-BotA = {'ClientID': environ['ClientID'],
-        'ClientSecret': environ['ClientSecret'],
-        'Password': environ['Password'],
-        'UserAgent': 'python3.6.1:darthplagueisbot:v1.3.3 (by /u/Sgp15)',
-        'Username': environ['Username']}
+bot_account = {'ClientID': environ['ClientID'],
+               'ClientSecret': environ['ClientSecret'],
+               'Password': environ['Password'],
+               'UserAgent': 'python3.6.1:darthplagueisbot:v1.3.3 (by /u/Sgp15)',
+               'Username': environ['Username']}
 
 # initialise reddit object with details
-reddit = praw.Reddit(client_id=BotA['ClientID'],
-                     client_secret=BotA['ClientSecret'],
-                     password=BotA['Password'],
-                     user_agent=BotA['UserAgent'],
-                     username=BotA['Username'])
+reddit = praw.Reddit(client_id=bot_account['ClientID'],
+                     client_secret=bot_account['ClientSecret'],
+                     password=bot_account['Password'],
+                     user_agent=bot_account['UserAgent'],
+                     username=bot_account['Username'])
 
 # which subreddit bot will be active in
 subreddit = reddit.subreddit('PrequelMemes')
 
 # phrase to reply with
-Tragedy = "I thought not. It's not a story the Jedi would tell you. "\
-          "It's a Sith legend. Darth Plagueis was a Dark Lord of the Sith, "\
-          'so powerful and so wise he could use the Force to influence the midichlorians to create life... '\
-          'He had such a knowledge of the dark side that he could even keep the ones he cared about from dying. '\
-          'The dark side of the Force is a pathway to many abilities some consider to be unnatural. '\
-          'He became so powerful... the only thing he was afraid of was losing his power, which eventually, '\
-          'of course, he did. Unfortunately, he taught his apprentice everything he knew, '\
+TRAGEDY = "I thought not. It's not a story the Jedi would tell you. " \
+          "It's a Sith legend. Darth Plagueis was a Dark Lord of the Sith, " \
+          'so powerful and so wise he could use the Force to influence the midichlorians to create life... ' \
+          'He had such a knowledge of the dark side that he could even keep the ones he cared about from dying. ' \
+          'The dark side of the Force is a pathway to many abilities some consider to be unnatural. ' \
+          'He became so powerful... the only thing he was afraid of was losing his power, which eventually, ' \
+          'of course, he did. Unfortunately, he taught his apprentice everything he knew, ' \
           'then his apprentice killed him in his sleep. It\'s ironic he could save others from death, but not himself.'
 
 # run bot
@@ -94,35 +94,34 @@ while True:
                 # increment 'comments checked' counter by 1
                 progress()
                 # ignore unknown unicode characters to avoid errors
-                CommentBody = comment.body.encode('ascii', 'replace')
+                comment_body = comment.body.encode('ascii', 'replace')
                 # check for general match,
                 # check for essential terms,
                 # check comment has not been replied to already,
                 # check comment is not the wrong phrase
-                if (findt(CommentBody, 1) and
-                    wordmatch(CommentBody.lower(), 'plagueis') and
-                    wordmatch(CommentBody.lower(), 'tragedy') and
-                    not str(comment) in Cache.get('actions') and
-                    not SequenceMatcher(None, Tragedy, CommentBody).ratio() > 0.66):
-                    
+                if (find_in_text(comment_body, 1) and
+                        word_match(comment_body.lower(), 'plagueis') and
+                        word_match(comment_body.lower(), 'tragedy') and
+                        not str(comment) in memcache.get('actions') and
+                        not SequenceMatcher(None, TRAGEDY, comment_body).ratio() > 0.66):
                     # newline
                     print('')
                     # display id, body, author and match percentage of comment
                     print(comment)
-                    print(CommentBody)
+                    print(comment_body)
                     print(comment.author)
-                    print(findt(CommentBody, 0))
+                    print(find_in_text(comment_body, 0))
                     # reply to comment
-                    comment.reply(Tragedy)
+                    comment.reply(TRAGEDY)
                     # add comment to list of comments that have been replied to
                     log(comment)
                     # newline
                     print('')
             # countdown for new accounts with limited comments/minute
             except praw.exceptions.APIException as err:
-                ErrorDetails = str(err)
+                error_details = str(err)
                 # get time till you can comment again from error details
-                WaitTime = ErrorDetails[54:55]
+                WaitTime = error_details[54:55]
                 print('Wait ' + WaitTime + ' minutes to work.')
                 Time = int(WaitTime)
                 # display time remaining every minute
@@ -131,7 +130,7 @@ while True:
                     Time -= 1
                     print(str(Time) + ' minute(s) left.')
             # generic error handler
-            except:
+            except Exception:
                 print('ERROR')
                 # get error details and display them
                 e = sys.exc_info()
