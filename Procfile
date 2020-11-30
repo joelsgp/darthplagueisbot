@@ -1,1 +1,1 @@
-run: python darthplagueisbot/runbotc133refact.py --env --cron
+run: python darthplagueisbot/run-bot.py --env --cron
