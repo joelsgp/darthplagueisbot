@@ -8,6 +8,11 @@ import prawcore
 import bmemcached
 
 
+# constants
+# SUBREDDIT = 'PrequelMemes'
+SUBREDDIT = 'bottesting'
+
+
 # function to search for the phrase
 def find_in_text(text, behaviour):
     trigger = 'Did you ever hear the tragedy of Darth Plagueis the wise'
@@ -73,7 +78,7 @@ reddit = praw.Reddit(client_id=bot_account['ClientID'],
                      username=bot_account['Username'])
 
 # which subreddit bot will be active in
-subreddit = reddit.subreddit('PrequelMemes')
+subreddit = reddit.subreddit(SUBREDDIT)
 
 # phrase to reply with
 TRAGEDY = "I thought not. It's not a story the Jedi would tell you. " \
