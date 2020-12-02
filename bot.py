@@ -7,6 +7,8 @@ import prawcore
 import bmemcached
 
 
+# TODO: switch from print to logging
+
 # constants
 # SUBREDDIT = 'PrequelMemes'
 SUBREDDIT = 'bottesting'
@@ -22,7 +24,7 @@ TRAGEDY = "I thought not. It's not a story the Jedi would tell you. " \
           'The dark side of the Force is a pathway to many abilities some consider to be unnatural. ' \
           'He became so powerful... the only thing he was afraid of was losing his power, which eventually, ' \
           'of course, he did. Unfortunately, he taught his apprentice everything he knew, ' \
-          'then his apprentice killed him in his sleep. It\'s ironic he could save others from death, but not himself.'
+          "then his apprentice killed him in his sleep. It's ironic he could save others from death, but not himself."
 
 # initialise cache using details in environment variables
 MEMCACHE = bmemcached.Client(os.environ['MEMCACHEDCLOUD_SERVERS'].split(','),
@@ -79,6 +81,7 @@ reddit = praw.Reddit(client_id=os.environ['REDDIT_CLIENT_ID'],
                      password=os.environ['REDDIT_PASSWORD'],
                      user_agent=USER_AGENT,
                      username=os.environ['REDDIT_USERNAME'])
+print('logged in')
 # which subreddit bot will be active in
 subreddit = reddit.subreddit(SUBREDDIT)
 
@@ -90,25 +93,23 @@ while True:
         for comment in subreddit.stream.comments():
             try:
                 # increment 'comments checked' counter by 1
+                # noinspection PyTypeChecker
                 progress(scanned)
-                # ignore unknown unicode characters to avoid errors
-                comment_body = comment.body.encode('ascii', 'replace')
                 # check for general match,
                 # check for essential terms,
                 # check comment has not been replied to already,
                 # check comment is not the wrong phrase
-                if (find_in_text(comment_body, 1) and
-                        word_match(comment_body.lower(), 'plagueis') and
-                        word_match(comment_body.lower(), 'tragedy') and
+                if (find_in_text(comment.body, 1) and
+                        word_match(comment.body.lower(), 'plagueis') and
+                        word_match(comment.body.lower(), 'tragedy') and
                         not str(comment) in MEMCACHE.get('actions') and
-                        not difflib.SequenceMatcher(None, TRAGEDY, comment_body).ratio() > 0.66):
+                        not difflib.SequenceMatcher(None, TRAGEDY, comment.body).ratio() > 0.66):
                     # display id, body, author and match percentage of comment
                     print('\n'
-                          f'id: {comment}'
-                          f'{comment_body}'
-                          f'user: {comment.author}'
-                          f'match ratio: {find_in_text(comment_body, 0)}'
-                          '\n')
+                          f'id: {comment}\n'
+                          f'{comment.body}\n'
+                          f'user: {comment.author}\n'
+                          f'match ratio: {find_in_text(comment.body, 0)}\n')
 
                     # reply to comment
                     comment.reply(TRAGEDY)
