@@ -61,9 +61,6 @@ def log(comment_id):
 
 
 # function to increment, output and log number of posts scanned so far
-scanned = MEMCACHE.get('scanned')
-
-
 def progress(scanned_current):
     scanned_current += 1
     # if 'scanned' is a multiple of 10, display it and record it to cache
@@ -73,6 +70,8 @@ def progress(scanned_current):
 
     return scanned_current
 
+
+scanned = MEMCACHE.get('scanned')
 
 # initialise reddit object with details from env vars
 reddit = praw.Reddit(client_id=os.environ['REDDIT_CLIENT_ID'],
@@ -103,21 +102,21 @@ while True:
                         word_match(comment_body.lower(), 'tragedy') and
                         not str(comment) in MEMCACHE.get('actions') and
                         not difflib.SequenceMatcher(None, TRAGEDY, comment_body).ratio() > 0.66):
-                    # newline
-                    print('')
                     # display id, body, author and match percentage of comment
-                    print(comment)
-                    print(comment_body)
-                    print(comment.author)
-                    print(find_in_text(comment_body, 0))
-                    print('')
+                    print('\n'
+                          f'id: {comment}'
+                          f'{comment_body}'
+                          f'user: {comment.author}'
+                          f'match ratio: {find_in_text(comment_body, 0)}'
+                          '\n')
+
                     # reply to comment
                     comment.reply(TRAGEDY)
                     # add comment to list of comments that have been replied to
                     log(comment)
 
             # countdown for new accounts with limited comments/minute
-            except praw.exceptions.APIException as err:
+            except praw.exceptions.RedditAPIException as err:
                 error_details = str(err)
                 # get time till you can comment again from error details
                 wait_time = int(error_details[54:55])
