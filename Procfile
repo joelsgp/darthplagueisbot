@@ -1,1 +1,1 @@
-run: python darthplagueisbot/run-bot.py --env --cron
+run: python bot.py

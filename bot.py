@@ -12,10 +12,27 @@ import bmemcached
 SUBREDDIT = 'bottesting'
 USER_AGENT = 'python3.9.0:darthplagueisbot:v2.0.0 (by /u/Sgp15)'
 
+# phrase to reply to
+TRIGGER = 'Did you ever hear the tragedy of Darth Plagueis the wise'
+# phrase to reply with
+TRAGEDY = "I thought not. It's not a story the Jedi would tell you. " \
+          "It's a Sith legend. Darth Plagueis was a Dark Lord of the Sith, " \
+          'so powerful and so wise he could use the Force to influence the midichlorians to create life... ' \
+          'He had such a knowledge of the dark side that he could even keep the ones he cared about from dying. ' \
+          'The dark side of the Force is a pathway to many abilities some consider to be unnatural. ' \
+          'He became so powerful... the only thing he was afraid of was losing his power, which eventually, ' \
+          'of course, he did. Unfortunately, he taught his apprentice everything he knew, ' \
+          'then his apprentice killed him in his sleep. It\'s ironic he could save others from death, but not himself.'
+
+# initialise cache using details in environment variables
+MEMCACHE = bmemcached.Client(os.environ['MEMCACHEDCLOUD_SERVERS'].split(','),
+                             os.environ['MEMCACHEDCLOUD_USERNAME'],
+                             os.environ['MEMCACHEDCLOUD_PASSWORD'])
+
 
 # function to search for the phrase
-def find_in_text(text, behaviour):
-    trigger = 'Did you ever hear the tragedy of Darth Plagueis the wise'
+def find_in_text(text, behaviour, trigger=TRIGGER):
+
     if behaviour == 0:
         return difflib.SequenceMatcher(None, trigger, text).ratio()
     elif difflib.SequenceMatcher(None, trigger, text).ratio() > 0.8:
@@ -35,32 +52,26 @@ def word_match(text, target_word):
             return True
 
 
-# initialise cache using details in environment variables
-memcache = bmemcached.Client(os.environ.get('MEMCACHEDCLOUD_SERVERS').split(','),
-                             os.environ.get('MEMCACHEDCLOUD_USERNAME'),
-                             os.environ.get('MEMCACHEDCLOUD_PASSWORD'))
-
-
 # function to log activity to avoid duplicate comments
 def log(comment_id):
     # add id to log
-    memcache.set('actions', memcache.get('actions') + [str(comment_id)])
-    # add 1 to 'Matches'
-    memcache.set('Matches', memcache.get('Matches') + 1)
+    MEMCACHE.set('actions', MEMCACHE.get('actions').append(comment_id))
+    # add 1 to 'matches'
+    MEMCACHE.incr('matches', 1)
 
 
 # function to increment, output and log number of posts scanned so far
-scanned = memcache.get('scanned')
+scanned = MEMCACHE.get('scanned')
 
 
-def progress():
-    global scanned
-    # add 1 to 'scanned'
-    scanned += 1
+def progress(scanned_current):
+    scanned_current += 1
     # if 'scanned' is a multiple of 10, display it and record it to cache
-    if scanned % 100 == 0:
-        print(str(scanned) + ' comments scanned.')
-        memcache.set('scanned', scanned)
+    if scanned_current % 100 == 0:
+        print(str(scanned_current) + ' comments scanned.')
+        MEMCACHE.set('scanned', scanned_current)
+
+    return scanned_current
 
 
 # initialise reddit object with details from env vars
@@ -69,19 +80,9 @@ reddit = praw.Reddit(client_id=os.environ['REDDIT_CLIENT_ID'],
                      password=os.environ['REDDIT_PASSWORD'],
                      user_agent=USER_AGENT,
                      username=os.environ['REDDIT_USERNAME'])
-
 # which subreddit bot will be active in
 subreddit = reddit.subreddit(SUBREDDIT)
 
-# phrase to reply with
-TRAGEDY = "I thought not. It's not a story the Jedi would tell you. " \
-          "It's a Sith legend. Darth Plagueis was a Dark Lord of the Sith, " \
-          'so powerful and so wise he could use the Force to influence the midichlorians to create life... ' \
-          'He had such a knowledge of the dark side that he could even keep the ones he cared about from dying. ' \
-          'The dark side of the Force is a pathway to many abilities some consider to be unnatural. ' \
-          'He became so powerful... the only thing he was afraid of was losing his power, which eventually, ' \
-          'of course, he did. Unfortunately, he taught his apprentice everything he knew, ' \
-          'then his apprentice killed him in his sleep. It\'s ironic he could save others from death, but not himself.'
 
 # run bot
 while True:
@@ -90,7 +91,7 @@ while True:
         for comment in subreddit.stream.comments():
             try:
                 # increment 'comments checked' counter by 1
-                progress()
+                progress(scanned)
                 # ignore unknown unicode characters to avoid errors
                 comment_body = comment.body.encode('ascii', 'replace')
                 # check for general match,
@@ -100,7 +101,7 @@ while True:
                 if (find_in_text(comment_body, 1) and
                         word_match(comment_body.lower(), 'plagueis') and
                         word_match(comment_body.lower(), 'tragedy') and
-                        not str(comment) in memcache.get('actions') and
+                        not str(comment) in MEMCACHE.get('actions') and
                         not difflib.SequenceMatcher(None, TRAGEDY, comment_body).ratio() > 0.66):
                     # newline
                     print('')
@@ -109,12 +110,11 @@ while True:
                     print(comment_body)
                     print(comment.author)
                     print(find_in_text(comment_body, 0))
+                    print('')
                     # reply to comment
                     comment.reply(TRAGEDY)
                     # add comment to list of comments that have been replied to
                     log(comment)
-                    # newline
-                    print('')
 
             # countdown for new accounts with limited comments/minute
             except praw.exceptions.APIException as err:
