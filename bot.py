@@ -103,7 +103,7 @@ while True:
                 if (find_in_text(comment.body, 1) and
                         word_match(comment.body.lower(), 'plagueis') and
                         word_match(comment.body.lower(), 'tragedy') and
-                        not str(comment) in MEMCACHE.get('actions') and
+                        comment.id not in MEMCACHE.get('actions') and
                         not difflib.SequenceMatcher(None, TRAGEDY, comment.body).ratio() > 0.66):
                     # display id, body, author and match percentage of comment
                     print('\n'
@@ -115,7 +115,7 @@ while True:
                     # reply to comment
                     comment.reply(TRAGEDY)
                     # add comment to list of comments that have been replied to
-                    log(comment)
+                    log(comment.id)
 
             # countdown for new accounts with limited comments/minute
             except praw.exceptions.RedditAPIException as err:
