@@ -12,8 +12,12 @@ __version__ = '2.0.0'
 
 # TODO: switch from print to logging
 
-SUBREDDIT = 'PrequelMemes+bottesting'
-# SUBREDDIT = 'bottesting'
+SUBREDDIT_LIST = [
+    'PrequelMemes',
+    'bottesting',
+    'controlmypc',
+]
+SUBREDDIT = '+'.join(SUBREDDIT_LIST)
 USER_AGENT = f'python3.9.0:darthplagueisbot:v{__version__} (by /u/Sgp15)'
 
 # phrase to reply to
