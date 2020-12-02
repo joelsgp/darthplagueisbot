@@ -1,7 +1,6 @@
-import sys
+import os
 import time
 import difflib
-from os import environ
 
 import praw
 import prawcore
@@ -11,6 +10,7 @@ import bmemcached
 # constants
 # SUBREDDIT = 'PrequelMemes'
 SUBREDDIT = 'bottesting'
+USER_AGENT = 'python3.9.0:darthplagueisbot:v2.0.0 (by /u/Sgp15)'
 
 
 # function to search for the phrase
@@ -36,9 +36,9 @@ def word_match(text, target_word):
 
 
 # initialise cache using details in environment variables
-memcache = bmemcached.Client(environ.get('MEMCACHEDCLOUD_SERVERS').split(','),
-                             environ.get('MEMCACHEDCLOUD_USERNAME'),
-                             environ.get('MEMCACHEDCLOUD_PASSWORD'))
+memcache = bmemcached.Client(os.environ.get('MEMCACHEDCLOUD_SERVERS').split(','),
+                             os.environ.get('MEMCACHEDCLOUD_USERNAME'),
+                             os.environ.get('MEMCACHEDCLOUD_PASSWORD'))
 
 
 # function to log activity to avoid duplicate comments
@@ -63,19 +63,12 @@ def progress():
         memcache.set('scanned', scanned)
 
 
-# fetch details from environmental variables
-bot_account = {'ClientID': environ['ClientID'],
-               'ClientSecret': environ['ClientSecret'],
-               'Password': environ['Password'],
-               'UserAgent': 'python3.6.1:darthplagueisbot:v1.3.3 (by /u/Sgp15)',
-               'Username': environ['Username']}
-
-# initialise reddit object with details
-reddit = praw.Reddit(client_id=bot_account['ClientID'],
-                     client_secret=bot_account['ClientSecret'],
-                     password=bot_account['Password'],
-                     user_agent=bot_account['UserAgent'],
-                     username=bot_account['Username'])
+# initialise reddit object with details from env vars
+reddit = praw.Reddit(client_id=os.environ['REDDIT_CLIENT_ID'],
+                     client_secret=os.environ['REDDIT_CLIENT_SECRET'],
+                     password=os.environ['REDDIT_PASSWORD'],
+                     user_agent=USER_AGENT,
+                     username=os.environ['REDDIT_USERNAME'])
 
 # which subreddit bot will be active in
 subreddit = reddit.subreddit(SUBREDDIT)
@@ -122,24 +115,19 @@ while True:
                     log(comment)
                     # newline
                     print('')
+
             # countdown for new accounts with limited comments/minute
             except praw.exceptions.APIException as err:
                 error_details = str(err)
                 # get time till you can comment again from error details
-                WaitTime = error_details[54:55]
-                print('Wait ' + WaitTime + ' minutes to work.')
-                Time = int(WaitTime)
+                wait_time = int(error_details[54:55])
+                print(f'Wait {wait_time} minutes to work.')
                 # display time remaining every minute
-                for i in range(Time):
+                for i in range(wait_time):
                     time.sleep(60)
-                    Time -= 1
-                    print(str(Time) + ' minute(s) left.')
-            # generic error handler
-            except Exception:
-                print('ERROR')
-                # get error details and display them
-                e = sys.exc_info()
-                print(e)
+                    wait_time -= 1
+                    print(f'{wait_time} minute(s) left.')
+
     # handler for error thrown when connection resets
     except prawcore.exceptions.RequestException as err:
         print(str(err))
