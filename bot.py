@@ -57,7 +57,8 @@ def word_match(text, target_word):
 # function to log activity to avoid duplicate comments
 def log(comment_id):
     # add id to log
-    MEMCACHE.set('actions', MEMCACHE.get('actions').append(comment_id))
+    # noinspection PyUnresolvedReferences
+    MEMCACHE.set('actions', MEMCACHE.get('actions') + [comment_id])
     # add 1 to 'matches'
     MEMCACHE.incr('matches', 1)
 
