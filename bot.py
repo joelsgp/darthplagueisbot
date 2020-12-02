@@ -7,12 +7,14 @@ import prawcore
 import bmemcached
 
 
+__version__ = '2.0.0'
+
+
 # TODO: switch from print to logging
 
-# constants
-# SUBREDDIT = 'PrequelMemes'
-SUBREDDIT = 'bottesting'
-USER_AGENT = 'python3.9.0:darthplagueisbot:v2.0.0 (by /u/Sgp15)'
+SUBREDDIT = 'PrequelMemes+bottesting'
+# SUBREDDIT = 'bottesting'
+USER_AGENT = f'python3.9.0:darthplagueisbot:v{__version__} (by /u/Sgp15)'
 
 # phrase to reply to
 TRIGGER = 'Did you ever hear the tragedy of Darth Plagueis the wise'
