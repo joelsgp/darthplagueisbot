@@ -7,7 +7,7 @@ import asyncprawcore
 import bmemcached
 
 
-__version__ = '2.0.0'
+__version__ = '2.1.0'
 
 
 # TODO: switch from print to logging
