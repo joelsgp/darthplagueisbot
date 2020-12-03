@@ -95,7 +95,7 @@ def check_comment(comment, match_ratio):
 
 async def process_comment(comment, scanned):
     # increment 'comments checked' counter by 1
-    await incr_comments_counter(scanned)
+    scanned = await incr_comments_counter(scanned)
 
     match_ratio = difflib.SequenceMatcher(a=TRIGGER, b=comment.body).ratio()
     if check_comment(comment, match_ratio):
