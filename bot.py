@@ -10,7 +10,7 @@ import bmemcached
 __version__ = '2.1.0'
 
 
-# TODO: switch from print to logging
+# TODO: switch from print to logging?
 
 SUBREDDIT_LIST = [
     'PrequelMemes',
@@ -22,6 +22,7 @@ USER_AGENT = f'python3.9.0:darthplagueisbot:v{__version__} (by /u/Sgp15)'
 
 # phrase to reply to
 TRIGGER = 'Did you ever hear the tragedy of Darth Plagueis the wise'
+TRIGGER_ESSENTIAL_WORDS = ['plagueis', 'tragedy']
 # phrase to reply with
 TRAGEDY = "I thought not. It's not a story the Jedi would tell you. " \
           "It's a Sith legend. Darth Plagueis was a Dark Lord of the Sith, " \
@@ -49,6 +50,15 @@ def word_match(text, target_word, threshold=0.8):
             return True
 
 
+# function to search for a list of specific words using word_match
+def all_words_match(text, target_words, threshold=0.8):
+    for target_word in target_words:
+        if not word_match(text, target_word, threshold):
+            return False
+
+    return True
+
+
 # function to log activity to avoid duplicate comments
 def log_comment_replied(comment_id):
     # add id to log
@@ -74,11 +84,10 @@ def check_comment(comment, match_ratio):
     # check for general match,
     # check for essential terms,
     # check comment is not the wrong phrase
-    if (match_ratio > 0.8 and
-            word_match(comment.body.lower(), 'plagueis') and
-            word_match(comment.body.lower(), 'tragedy') and
-            not difflib.SequenceMatcher(a=TRAGEDY, b=comment.body).ratio() > 0.66):
-        return True
+    if match_ratio > 0.8:
+        if all_words_match(comment.body.lower(), TRIGGER_ESSENTIAL_WORDS):
+            if not difflib.SequenceMatcher(a=TRAGEDY, b=comment.body).ratio() > 0.66:
+                return True
     else:
         return False
 
