@@ -1,6 +1,7 @@
 import os
 import time
 import difflib
+import asyncio
 
 import asyncpraw
 import asyncprawcore
@@ -13,7 +14,7 @@ __version__ = '2.1.0'
 # TODO: switch from print to logging?
 
 SUBREDDIT_LIST = [
-    'PrequelMemes',
+    # 'PrequelMemes',
     'bottesting',
     'controlmypc',
 ]
@@ -69,7 +70,7 @@ def log_comment_replied(comment_id):
 
 
 # function to increment, output and log number of posts scanned so far
-def incr_comments_counter(scanned, increment=1):
+async def incr_comments_counter(scanned, increment=1):
     scanned += increment
     # if 'scanned' is a multiple of 10, display it and record it to cache
     if scanned % 100 == 0:
@@ -116,7 +117,7 @@ async def process_comment(comment, scanned):
 
 
 # run bot
-def main():
+async def main():
     scanned = MEMCACHE.get('scanned')
 
     # initialise reddit object with details from env vars
@@ -135,7 +136,7 @@ def main():
             scanned = await process_comment(comment, scanned)
 
     # countdown for new accounts with limited comments/minute
-    except asyncpraw.exceptions.RateLimitExceeded as error:
+    except asyncpraw.exceptions.RedditAPIException as error:
         # get time till you can comment again, from error details
         wait_time = int(error.sleep_time)
         print(f'Wait {wait_time} minutes to work.')
@@ -152,4 +153,6 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
+    loop.close()
