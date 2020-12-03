@@ -39,18 +39,18 @@ MEMCACHE = bmemcached.Client(os.environ['MEMCACHEDCLOUD_SERVERS'].split(','),
 
 
 # function to search for specific words using difflib
-def word_match(text, target_word):
+def word_match(text, target_word, threshold=0.8):
     # split string into individual words
     text_words = text.split()
     # check each word
     for j in range(len(text_words)):
         # if word is more than 80% match, return 'True'
-        if difflib.SequenceMatcher(a=target_word, b=text_words[j]).ratio() > 0.8:
+        if difflib.SequenceMatcher(a=target_word, b=text_words[j]).ratio() > threshold:
             return True
 
 
 # function to log activity to avoid duplicate comments
-def log(comment_id):
+def log_comment_replied(comment_id):
     # add id to log
     # noinspection PyUnresolvedReferences
     MEMCACHE.set('actions', MEMCACHE.get('actions') + [comment_id])
@@ -59,8 +59,8 @@ def log(comment_id):
 
 
 # function to increment, output and log number of posts scanned so far
-def progress(scanned_current):
-    scanned_current += 1
+def incr_comments_counter(scanned_current, increment=1):
+    scanned_current += increment
     # if 'scanned' is a multiple of 10, display it and record it to cache
     if scanned_current % 100 == 0:
         print(str(scanned_current) + ' comments scanned.')
@@ -90,7 +90,7 @@ while True:
             try:
                 # increment 'comments checked' counter by 1
                 # noinspection PyTypeChecker
-                progress(scanned)
+                incr_comments_counter(scanned)
 
                 match_ratio = difflib.SequenceMatcher(a=TRIGGER, b=comment.body).ratio()
                 # check for general match,
@@ -112,7 +112,7 @@ while True:
                     # reply to comment
                     comment.reply(TRAGEDY)
                     # add comment to list of comments that have been replied to
-                    log(comment.id)
+                    log_comment_replied(comment.id)
 
             # countdown for new accounts with limited comments/minute
             except praw.exceptions.RedditAPIException as err:
