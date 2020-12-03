@@ -42,8 +42,8 @@ MEMCACHE = bmemcached.Client(os.environ['MEMCACHEDCLOUD_SERVERS'].split(','),
 def find_in_text(text, behaviour, trigger=TRIGGER):
 
     if behaviour == 0:
-        return difflib.SequenceMatcher(None, trigger, text).ratio()
-    elif difflib.SequenceMatcher(None, trigger, text).ratio() > 0.8:
+        return difflib.SequenceMatcher(a=trigger, b=text).ratio()
+    elif difflib.SequenceMatcher(a=trigger, b=text).ratio() > 0.8:
         return True
     else:
         return False
@@ -56,7 +56,7 @@ def word_match(text, target_word):
     # check each word
     for j in range(len(text_words)):
         # if word is more than 80% match, return 'True'
-        if difflib.SequenceMatcher(None, target_word, text_words[j]).ratio() > 0.8:
+        if difflib.SequenceMatcher(a=target_word, b=text_words[j]).ratio() > 0.8:
             return True
 
 
@@ -110,7 +110,7 @@ while True:
                         word_match(comment.body.lower(), 'plagueis') and
                         word_match(comment.body.lower(), 'tragedy') and
                         comment.id not in MEMCACHE.get('actions') and
-                        not difflib.SequenceMatcher(None, TRAGEDY, comment.body).ratio() > 0.66):
+                        not difflib.SequenceMatcher(a=TRAGEDY, b=comment.body).ratio() > 0.66):
                     # display id, body, author and match percentage of comment
                     print('\n'
                           f'id: {comment}\n'
