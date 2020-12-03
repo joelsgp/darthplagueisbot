@@ -2,8 +2,8 @@ import os
 import time
 import difflib
 
-import praw
-import prawcore
+import asyncpraw
+import asyncprawcore
 import bmemcached
 
 
@@ -59,14 +59,14 @@ def log_comment_replied(comment_id):
 
 
 # function to increment, output and log number of posts scanned so far
-def incr_comments_counter(scanned_current, increment=1):
-    scanned_current += increment
+def incr_comments_counter(scanned, increment=1):
+    scanned += increment
     # if 'scanned' is a multiple of 10, display it and record it to cache
-    if scanned_current % 100 == 0:
-        print(str(scanned_current) + ' comments scanned.')
-        MEMCACHE.set('scanned', scanned_current)
+    if scanned % 100 == 0:
+        print(str(scanned) + ' comments scanned.')
+        MEMCACHE.set('scanned', scanned)
 
-    return scanned_current
+    return scanned
 
 
 # checks if a comment should be replied to
@@ -83,62 +83,65 @@ def check_comment(comment, match_ratio):
         return False
 
 
+async def process_comment(comment, scanned):
+    # increment 'comments checked' counter by 1
+    await incr_comments_counter(scanned)
+
+    # check comment has not been replied to already
+    if comment.id not in MEMCACHE.get('actions'):
+        match_ratio = difflib.SequenceMatcher(a=TRIGGER, b=comment.body).ratio()
+
+        if check_comment(comment, match_ratio):
+            # display id, body, author and match percentage of comment
+            print('\n'
+                  f'id: {comment}\n'
+                  f'{comment.body}\n'
+                  f'user: {comment.author}\n'
+                  f'match ratio: {match_ratio}\n')
+
+            # reply to comment
+            await comment.reply(TRAGEDY)
+            # add comment to list of comments that have been replied to
+            log_comment_replied(comment.id)
+
+    return scanned
+
+
 # run bot
 def main():
     scanned = MEMCACHE.get('scanned')
 
     # initialise reddit object with details from env vars
-    reddit = praw.Reddit(client_id=os.environ['REDDIT_CLIENT_ID'],
-                         client_secret=os.environ['REDDIT_CLIENT_SECRET'],
-                         password=os.environ['REDDIT_PASSWORD'],
-                         user_agent=USER_AGENT,
-                         username=os.environ['REDDIT_USERNAME'])
+    reddit = asyncpraw.Reddit(client_id=os.environ['REDDIT_CLIENT_ID'],
+                              client_secret=os.environ['REDDIT_CLIENT_SECRET'],
+                              password=os.environ['REDDIT_PASSWORD'],
+                              user_agent=USER_AGENT,
+                              username=os.environ['REDDIT_USERNAME'])
     print('logged in')
     # which subreddit bot will be active in
-    subreddit = reddit.subreddit(SUBREDDIT)
+    subreddit = await reddit.subreddit(SUBREDDIT)
 
-    while True:
-        try:
-            # start reading comment stream
-            for comment in subreddit.stream.comments():
-                try:
-                    # increment 'comments checked' counter by 1
-                    # noinspection PyTypeChecker
-                    incr_comments_counter(scanned)
+    try:
+        # start reading comment stream
+        async for comment in subreddit.stream.comments():
+            scanned = await process_comment(comment, scanned)
 
-                    # check comment has not been replied to already
-                    if comment.id not in MEMCACHE.get('actions'):
-                        match_ratio = difflib.SequenceMatcher(a=TRIGGER, b=comment.body).ratio()
+    # countdown for new accounts with limited comments/minute
+    except asyncpraw.exceptions.RedditAPIException as err:
+        error_details = str(err)
+        # get time till you can comment again from error details
+        wait_time = int(error_details[54:55])
+        print(f'Wait {wait_time} minutes to work.')
+        # display time remaining every minute
+        for i in range(wait_time):
+            time.sleep(60)
+            wait_time -= 1
+            print(f'{wait_time} minute(s) left.')
 
-                        if check_comment(comment, match_ratio):
-                            # display id, body, author and match percentage of comment
-                            print('\n'
-                                  f'id: {comment}\n'
-                                  f'{comment.body}\n'
-                                  f'user: {comment.author}\n'
-                                  f'match ratio: {match_ratio}\n')
-
-                            # reply to comment
-                            comment.reply(TRAGEDY)
-                            # add comment to list of comments that have been replied to
-                            log_comment_replied(comment.id)
-
-                # countdown for new accounts with limited comments/minute
-                except praw.exceptions.RedditAPIException as err:
-                    error_details = str(err)
-                    # get time till you can comment again from error details
-                    wait_time = int(error_details[54:55])
-                    print(f'Wait {wait_time} minutes to work.')
-                    # display time remaining every minute
-                    for i in range(wait_time):
-                        time.sleep(60)
-                        wait_time -= 1
-                        print(f'{wait_time} minute(s) left.')
-
-        # handler for error thrown when connection resets
-        except prawcore.exceptions.RequestException as err:
-            print(str(err))
-            print('Connection reset.')
+    # handler for error thrown when connection resets
+    except asyncprawcore.exceptions.RequestException as err:
+        print(str(err))
+        print('Connection reset.')
 
 
 if __name__ == '__main__':
