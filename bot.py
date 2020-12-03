@@ -96,11 +96,10 @@ async def process_comment(comment, scanned):
     # increment 'comments checked' counter by 1
     await incr_comments_counter(scanned)
 
-    # check comment has not been replied to already
-    if comment.id not in MEMCACHE.get('actions'):
-        match_ratio = difflib.SequenceMatcher(a=TRIGGER, b=comment.body).ratio()
-
-        if check_comment(comment, match_ratio):
+    match_ratio = difflib.SequenceMatcher(a=TRIGGER, b=comment.body).ratio()
+    if check_comment(comment, match_ratio):
+        # check comment has not been replied to already
+        if comment.id not in MEMCACHE.get('actions'):
             # display id, body, author and match percentage of comment
             print('\n'
                   f'id: {comment}\n'
