@@ -12,6 +12,7 @@ __version__ = '2.1.0'
 
 
 # TODO: switch from print to logging?
+# TODO: add docstrings I guess if I want
 
 SUBREDDIT_LIST = [
     'PrequelMemes',
