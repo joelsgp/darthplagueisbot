@@ -34,6 +34,8 @@ TRAGEDY = "I thought not. It's not a story the Jedi would tell you. " \
           'of course, he did. Unfortunately, he taught his apprentice everything he knew, ' \
           "then his apprentice killed him in his sleep. It's ironic he could save others from death, but not himself."
 
+COMMENTS_SCANNED_LOG_INTERVAL = 1000
+
 # initialise cache using details in environment variables
 MEMCACHE = bmemcached.Client(os.environ['MEMCACHEDCLOUD_SERVERS'].split(','),
                              os.environ['MEMCACHEDCLOUD_USERNAME'],
@@ -70,10 +72,10 @@ def log_comment_replied(comment_id):
 
 
 # function to increment, output and log number of posts scanned so far
-async def incr_comments_counter(scanned, increment=1):
+async def incr_comments_counter(scanned, increment=1, interval=COMMENTS_SCANNED_LOG_INTERVAL):
     scanned += increment
-    # if 'scanned' is a multiple of 10, display it and record it to cache
-    if scanned % 100 == 0:
+    # if 'scanned' is a multiple of the interval, display it and record it to cache
+    if scanned % interval == 0:
         print(str(scanned) + ' comments scanned.')
         MEMCACHE.set('scanned', scanned)
 
@@ -106,7 +108,7 @@ async def process_comment(comment, scanned):
                   f'id: {comment}\n'
                   f'{comment.body}\n'
                   f'user: {comment.author}\n'
-                  f'match ratio: {match_ratio}\n')
+                  f'match ratio: {round(match_ratio, 4)}\n')
 
             # reply to comment
             await comment.reply(TRAGEDY)
