@@ -14,7 +14,7 @@ __version__ = '2.1.0'
 # TODO: switch from print to logging?
 
 SUBREDDIT_LIST = [
-    # 'PrequelMemes',
+    'PrequelMemes',
     'bottesting',
     'controlmypc',
 ]
