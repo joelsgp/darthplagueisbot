@@ -38,17 +38,6 @@ MEMCACHE = bmemcached.Client(os.environ['MEMCACHEDCLOUD_SERVERS'].split(','),
                              os.environ['MEMCACHEDCLOUD_PASSWORD'])
 
 
-# function to search for the phrase
-def find_in_text(text, behaviour, trigger=TRIGGER):
-
-    if behaviour == 0:
-        return difflib.SequenceMatcher(a=trigger, b=text).ratio()
-    elif difflib.SequenceMatcher(a=trigger, b=text).ratio() > 0.8:
-        return True
-    else:
-        return False
-
-
 # function to search for specific words using difflib
 def word_match(text, target_word):
     # split string into individual words
@@ -102,11 +91,13 @@ while True:
                 # increment 'comments checked' counter by 1
                 # noinspection PyTypeChecker
                 progress(scanned)
+
+                match_ratio = difflib.SequenceMatcher(a=TRIGGER, b=comment.body).ratio()
                 # check for general match,
                 # check for essential terms,
                 # check comment has not been replied to already,
                 # check comment is not the wrong phrase
-                if (find_in_text(comment.body, 1) and
+                if (match_ratio > 0.8 and
                         word_match(comment.body.lower(), 'plagueis') and
                         word_match(comment.body.lower(), 'tragedy') and
                         comment.id not in MEMCACHE.get('actions') and
@@ -116,7 +107,7 @@ while True:
                           f'id: {comment}\n'
                           f'{comment.body}\n'
                           f'user: {comment.author}\n'
-                          f'match ratio: {find_in_text(comment.body, 0)}\n')
+                          f'match ratio: {match_ratio}\n')
 
                     # reply to comment
                     comment.reply(TRAGEDY)
