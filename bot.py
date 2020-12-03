@@ -69,6 +69,20 @@ def incr_comments_counter(scanned_current, increment=1):
     return scanned_current
 
 
+# checks if a comment should be replied to
+def check_comment(comment, match_ratio):
+    # check for general match,
+    # check for essential terms,
+    # check comment is not the wrong phrase
+    if (match_ratio > 0.8 and
+            word_match(comment.body.lower(), 'plagueis') and
+            word_match(comment.body.lower(), 'tragedy') and
+            not difflib.SequenceMatcher(a=TRAGEDY, b=comment.body).ratio() > 0.66):
+        return True
+    else:
+        return False
+
+
 # run bot
 def main():
     scanned = MEMCACHE.get('scanned')
@@ -92,27 +106,22 @@ def main():
                     # noinspection PyTypeChecker
                     incr_comments_counter(scanned)
 
-                    match_ratio = difflib.SequenceMatcher(a=TRIGGER, b=comment.body).ratio()
-                    # check for general match,
-                    # check for essential terms,
-                    # check comment has not been replied to already,
-                    # check comment is not the wrong phrase
-                    if (match_ratio > 0.8 and
-                            word_match(comment.body.lower(), 'plagueis') and
-                            word_match(comment.body.lower(), 'tragedy') and
-                            comment.id not in MEMCACHE.get('actions') and
-                            not difflib.SequenceMatcher(a=TRAGEDY, b=comment.body).ratio() > 0.66):
-                        # display id, body, author and match percentage of comment
-                        print('\n'
-                              f'id: {comment}\n'
-                              f'{comment.body}\n'
-                              f'user: {comment.author}\n'
-                              f'match ratio: {match_ratio}\n')
+                    # check comment has not been replied to already
+                    if comment.id not in MEMCACHE.get('actions'):
+                        match_ratio = difflib.SequenceMatcher(a=TRIGGER, b=comment.body).ratio()
 
-                        # reply to comment
-                        comment.reply(TRAGEDY)
-                        # add comment to list of comments that have been replied to
-                        log_comment_replied(comment.id)
+                        if check_comment(comment, match_ratio):
+                            # display id, body, author and match percentage of comment
+                            print('\n'
+                                  f'id: {comment}\n'
+                                  f'{comment.body}\n'
+                                  f'user: {comment.author}\n'
+                                  f'match ratio: {match_ratio}\n')
+
+                            # reply to comment
+                            comment.reply(TRAGEDY)
+                            # add comment to list of comments that have been replied to
+                            log_comment_replied(comment.id)
 
                 # countdown for new accounts with limited comments/minute
                 except praw.exceptions.RedditAPIException as err:
