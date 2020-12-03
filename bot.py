@@ -69,64 +69,68 @@ def incr_comments_counter(scanned_current, increment=1):
     return scanned_current
 
 
-scanned = MEMCACHE.get('scanned')
-
-# initialise reddit object with details from env vars
-reddit = praw.Reddit(client_id=os.environ['REDDIT_CLIENT_ID'],
-                     client_secret=os.environ['REDDIT_CLIENT_SECRET'],
-                     password=os.environ['REDDIT_PASSWORD'],
-                     user_agent=USER_AGENT,
-                     username=os.environ['REDDIT_USERNAME'])
-print('logged in')
-# which subreddit bot will be active in
-subreddit = reddit.subreddit(SUBREDDIT)
-
-
 # run bot
-while True:
-    try:
-        # start reading comment stream
-        for comment in subreddit.stream.comments():
-            try:
-                # increment 'comments checked' counter by 1
-                # noinspection PyTypeChecker
-                incr_comments_counter(scanned)
+def main():
+    scanned = MEMCACHE.get('scanned')
 
-                match_ratio = difflib.SequenceMatcher(a=TRIGGER, b=comment.body).ratio()
-                # check for general match,
-                # check for essential terms,
-                # check comment has not been replied to already,
-                # check comment is not the wrong phrase
-                if (match_ratio > 0.8 and
-                        word_match(comment.body.lower(), 'plagueis') and
-                        word_match(comment.body.lower(), 'tragedy') and
-                        comment.id not in MEMCACHE.get('actions') and
-                        not difflib.SequenceMatcher(a=TRAGEDY, b=comment.body).ratio() > 0.66):
-                    # display id, body, author and match percentage of comment
-                    print('\n'
-                          f'id: {comment}\n'
-                          f'{comment.body}\n'
-                          f'user: {comment.author}\n'
-                          f'match ratio: {match_ratio}\n')
+    # initialise reddit object with details from env vars
+    reddit = praw.Reddit(client_id=os.environ['REDDIT_CLIENT_ID'],
+                         client_secret=os.environ['REDDIT_CLIENT_SECRET'],
+                         password=os.environ['REDDIT_PASSWORD'],
+                         user_agent=USER_AGENT,
+                         username=os.environ['REDDIT_USERNAME'])
+    print('logged in')
+    # which subreddit bot will be active in
+    subreddit = reddit.subreddit(SUBREDDIT)
 
-                    # reply to comment
-                    comment.reply(TRAGEDY)
-                    # add comment to list of comments that have been replied to
-                    log_comment_replied(comment.id)
+    while True:
+        try:
+            # start reading comment stream
+            for comment in subreddit.stream.comments():
+                try:
+                    # increment 'comments checked' counter by 1
+                    # noinspection PyTypeChecker
+                    incr_comments_counter(scanned)
 
-            # countdown for new accounts with limited comments/minute
-            except praw.exceptions.RedditAPIException as err:
-                error_details = str(err)
-                # get time till you can comment again from error details
-                wait_time = int(error_details[54:55])
-                print(f'Wait {wait_time} minutes to work.')
-                # display time remaining every minute
-                for i in range(wait_time):
-                    time.sleep(60)
-                    wait_time -= 1
-                    print(f'{wait_time} minute(s) left.')
+                    match_ratio = difflib.SequenceMatcher(a=TRIGGER, b=comment.body).ratio()
+                    # check for general match,
+                    # check for essential terms,
+                    # check comment has not been replied to already,
+                    # check comment is not the wrong phrase
+                    if (match_ratio > 0.8 and
+                            word_match(comment.body.lower(), 'plagueis') and
+                            word_match(comment.body.lower(), 'tragedy') and
+                            comment.id not in MEMCACHE.get('actions') and
+                            not difflib.SequenceMatcher(a=TRAGEDY, b=comment.body).ratio() > 0.66):
+                        # display id, body, author and match percentage of comment
+                        print('\n'
+                              f'id: {comment}\n'
+                              f'{comment.body}\n'
+                              f'user: {comment.author}\n'
+                              f'match ratio: {match_ratio}\n')
 
-    # handler for error thrown when connection resets
-    except prawcore.exceptions.RequestException as err:
-        print(str(err))
-        print('Connection reset.')
+                        # reply to comment
+                        comment.reply(TRAGEDY)
+                        # add comment to list of comments that have been replied to
+                        log_comment_replied(comment.id)
+
+                # countdown for new accounts with limited comments/minute
+                except praw.exceptions.RedditAPIException as err:
+                    error_details = str(err)
+                    # get time till you can comment again from error details
+                    wait_time = int(error_details[54:55])
+                    print(f'Wait {wait_time} minutes to work.')
+                    # display time remaining every minute
+                    for i in range(wait_time):
+                        time.sleep(60)
+                        wait_time -= 1
+                        print(f'{wait_time} minute(s) left.')
+
+        # handler for error thrown when connection resets
+        except prawcore.exceptions.RequestException as err:
+            print(str(err))
+            print('Connection reset.')
+
+
+if __name__ == '__main__':
+    main()
