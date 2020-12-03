@@ -127,10 +127,9 @@ def main():
             scanned = await process_comment(comment, scanned)
 
     # countdown for new accounts with limited comments/minute
-    except asyncpraw.exceptions.RedditAPIException as err:
-        error_details = str(err)
-        # get time till you can comment again from error details
-        wait_time = int(error_details[54:55])
+    except asyncpraw.exceptions.RateLimitExceeded as error:
+        # get time till you can comment again, from error details
+        wait_time = int(error.sleep_time)
         print(f'Wait {wait_time} minutes to work.')
         # display time remaining every minute
         for i in range(wait_time):
@@ -139,8 +138,8 @@ def main():
             print(f'{wait_time} minute(s) left.')
 
     # handler for error thrown when connection resets
-    except asyncprawcore.exceptions.RequestException as err:
-        print(str(err))
+    except asyncprawcore.exceptions.RequestException as error:
+        print(str(error))
         print('Connection reset.')
 
 
