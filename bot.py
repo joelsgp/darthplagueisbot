@@ -11,6 +11,8 @@ import bmemcached
 
 
 logging.basicConfig(level=logging.DEBUG)
+logging.getLogger('asyncprawcore').disabled = True
+logging.getLogger('bmemcached.protocol').disabled = True
 
 
 __version__ = '2.1.0'
