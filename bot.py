@@ -10,8 +10,7 @@ import asyncprawcore
 import bmemcached
 
 
-# TODO: set level to INFO once certain it's all working ok
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logging.getLogger('asyncprawcore').disabled = True
 logging.getLogger('bmemcached.protocol').disabled = True
 
