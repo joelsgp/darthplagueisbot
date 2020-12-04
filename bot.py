@@ -110,7 +110,7 @@ def check_comment(comment, match_ratio):
 
 
 async def process_comment(comment, scanned):
-    logging.debug('Scanning comment:.\n'
+    logging.debug('Scanning comment\n'
                   f'  id: {comment}\n'
                   f'  {comment.body}\n'
                   f'  user: {comment.author}')
@@ -123,7 +123,7 @@ async def process_comment(comment, scanned):
         # check comment has not been replied to already
         if comment.id not in MEMCACHE.get('actions'):
             # display id, body, author and match percentage of comment
-            logging.info('Comment matched.\n'
+            logging.info('Comment matched\n'
                          f'  id: {comment}\n'
                          f'  {comment.body}\n'
                          f'  user: {comment.author}\n'
