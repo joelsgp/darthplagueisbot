@@ -10,6 +10,9 @@ import asyncprawcore
 import bmemcached
 
 
+logging.basicConfig(level=logging.DEBUG)
+
+
 __version__ = '2.1.0'
 
 
@@ -108,7 +111,7 @@ async def process_comment(comment, scanned):
     logging.debug('Scanning comment:.\n'
                   f'  id: {comment}\n'
                   f'  {comment.body}\n'
-                  f'  user: {comment.author}\n')
+                  f'  user: {comment.author}')
 
     # increment 'comments checked' counter by 1
     scanned = await incr_comments_counter(scanned)
@@ -129,6 +132,8 @@ async def process_comment(comment, scanned):
             logging.info('Replied to comment.')
             # add comment to list of comments that have been replied to
             log_comment_replied(comment.id)
+        else:
+            logging.debug('Comment already replied to.')
 
     return scanned
 
