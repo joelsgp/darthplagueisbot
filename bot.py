@@ -1,7 +1,9 @@
 import os
+import sys
 import time
 import difflib
 import asyncio
+import logging
 
 import asyncpraw
 import asyncprawcore
@@ -11,7 +13,6 @@ import bmemcached
 __version__ = '2.1.0'
 
 
-# TODO: switch from print to logging?
 # TODO: add docstrings I guess if I want
 
 SUBREDDIT_LIST = [
@@ -77,7 +78,7 @@ async def incr_comments_counter(scanned, increment=1, interval=COMMENTS_SCANNED_
     scanned += increment
     # if 'scanned' is a multiple of the interval, display it and record it to cache
     if scanned % interval == 0:
-        print(str(scanned) + ' comments scanned.')
+        logging.info(f'{scanned} comments scanned.')
         MEMCACHE.set('scanned', scanned)
 
     return scanned
@@ -105,14 +106,15 @@ async def process_comment(comment, scanned):
         # check comment has not been replied to already
         if comment.id not in MEMCACHE.get('actions'):
             # display id, body, author and match percentage of comment
-            print('\n'
-                  f'id: {comment}\n'
-                  f'{comment.body}\n'
-                  f'user: {comment.author}\n'
-                  f'match ratio: {round(match_ratio, 4)}\n')
+            logging.info('Comment matched.\n'
+                         f'  id: {comment}\n'
+                         f'  {comment.body}\n'
+                         f'  user: {comment.author}\n'
+                         f'  match ratio: {round(match_ratio, 4)}\n')
 
             # reply to comment
             await comment.reply(TRAGEDY)
+            logging.info('Replied to comment.')
             # add comment to list of comments that have been replied to
             log_comment_replied(comment.id)
 
@@ -129,7 +131,7 @@ async def main():
                               password=os.environ['REDDIT_PASSWORD'],
                               user_agent=USER_AGENT,
                               username=os.environ['REDDIT_USERNAME'])
-    print('logged in')
+    logging.info('Logged in.')
     # which subreddit bot will be active in
     subreddit = await reddit.subreddit(SUBREDDIT)
 
@@ -142,17 +144,17 @@ async def main():
     except asyncpraw.exceptions.RedditAPIException as error:
         # get time till you can comment again, from error details
         wait_time = int(error.sleep_time)
-        print(f'Wait {wait_time} minutes to work.')
+        logging.war(f'Wait {wait_time} minutes to work.', exc_info=sys.exc_info())
         # display time remaining every minute
         for i in range(wait_time):
             time.sleep(60)
             wait_time -= 1
-            print(f'{wait_time} minute(s) left.')
+            logging.error(f'{wait_time} minute(s) left.')
 
     # handler for error thrown when connection resets
-    except asyncprawcore.exceptions.RequestException as error:
-        print(str(error))
-        print('Connection reset.')
+    except asyncprawcore.exceptions.RequestException:
+        logging.error(exc_info=sys.exc_info())
+        logging.error('Connection reset.')
 
 
 if __name__ == '__main__':
