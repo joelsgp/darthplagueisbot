@@ -15,9 +15,9 @@ __version__ = '2.1.0'
 # TODO: add docstrings I guess if I want
 
 SUBREDDIT_LIST = [
-    'PrequelMemes',
+    # 'PrequelMemes',
+    # 'controlmypc',
     'bottesting',
-    'controlmypc',
 ]
 SUBREDDIT = '+'.join(SUBREDDIT_LIST)
 USER_AGENT = f'python3.9.0:darthplagueisbot:v{__version__} (by /u/Sgp15)'
