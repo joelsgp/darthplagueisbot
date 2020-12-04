@@ -77,6 +77,7 @@ def log_comment_replied(comment_id):
 async def incr_comments_counter(scanned, increment=1, interval=COMMENTS_SCANNED_LOG_INTERVAL):
     scanned += increment
     # if 'scanned' is a multiple of the interval, display it and record it to cache
+    logging.debug(f'{scanned} comments scanned.')
     if scanned % interval == 0:
         logging.info(f'{scanned} comments scanned.')
         MEMCACHE.set('scanned', scanned)
@@ -89,15 +90,26 @@ def check_comment(comment, match_ratio):
     # check for general match,
     # check for essential terms,
     # check comment is not the wrong phrase
+    logging.debug(f'Match ratio: {match_ratio}')
+
     if match_ratio > 0.8:
         if all_words_match(comment.body.lower(), TRIGGER_ESSENTIAL_WORDS):
             if not difflib.SequenceMatcher(a=TRAGEDY, b=comment.body).ratio() > 0.66:
                 return True
+        else:
+            logging.debug("Doesn't have essential words")
     else:
-        return False
+        logging.debug('Match ratio too low.')
+
+    return False
 
 
 async def process_comment(comment, scanned):
+    logging.debug('Scanning comment:.\n'
+                  f'  id: {comment}\n'
+                  f'  {comment.body}\n'
+                  f'  user: {comment.author}\n')
+
     # increment 'comments checked' counter by 1
     scanned = await incr_comments_counter(scanned)
 
@@ -110,7 +122,7 @@ async def process_comment(comment, scanned):
                          f'  id: {comment}\n'
                          f'  {comment.body}\n'
                          f'  user: {comment.author}\n'
-                         f'  match ratio: {round(match_ratio, 4)}\n')
+                         f'  match ratio: {round(match_ratio, 4)}')
 
             # reply to comment
             await comment.reply(TRAGEDY)
@@ -144,7 +156,7 @@ async def main():
     except asyncpraw.exceptions.RedditAPIException as error:
         # get time till you can comment again, from error details
         wait_time = int(error.sleep_time)
-        logging.war(f'Wait {wait_time} minutes to work.', exc_info=sys.exc_info())
+        logging.error(f'Wait {wait_time} minutes to work.', exc_info=sys.exc_info())
         # display time remaining every minute
         for i in range(wait_time):
             time.sleep(60)
@@ -153,7 +165,7 @@ async def main():
 
     # handler for error thrown when connection resets
     except asyncprawcore.exceptions.RequestException:
-        logging.error(exc_info=sys.exc_info())
+        logging.error('Request exception ', exc_info=sys.exc_info())
         logging.error('Connection reset.')
 
 
