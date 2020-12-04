@@ -10,19 +10,20 @@ import asyncprawcore
 import bmemcached
 
 
+# TODO: set level to INFO once certain it's all working ok
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger('asyncprawcore').disabled = True
 logging.getLogger('bmemcached.protocol').disabled = True
 
 
-__version__ = '2.1.0'
+__version__ = '2.1.1'
 
 
 # TODO: add docstrings I guess if I want
 
 SUBREDDIT_LIST = [
-    # 'PrequelMemes',
-    # 'controlmypc',
+    'PrequelMemes',
+    'controlmypc',
     'bottesting',
 ]
 SUBREDDIT = '+'.join(SUBREDDIT_LIST)
