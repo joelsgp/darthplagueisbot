@@ -41,7 +41,8 @@ TRAGEDY = "I thought not. It's not a story the Jedi would tell you. " \
           'of course, he did. Unfortunately, he taught his apprentice everything he knew, ' \
           "then his apprentice killed him in his sleep. It's ironic he could save others from death, but not himself."
 
-COMMENTS_SCANNED_LOG_INTERVAL = 1000
+# TODO: hm maybe make this env var instead so it can be updated by cycling the program instead?
+COMMENTS_SCANNED_LOG_INTERVAL = 100
 
 # initialise cache using details in environment variables
 MEMCACHE = bmemcached.Client(os.environ['MEMCACHEDCLOUD_SERVERS'].split(','),
