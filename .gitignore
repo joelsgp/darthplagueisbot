@@ -1,4 +1,6 @@
 # Python virtualenv directory
 .venv
+.venv-praw
+.venv-asyncpraw
 # PyCharm project folder
 .idea
