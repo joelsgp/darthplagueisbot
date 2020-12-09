@@ -2,16 +2,15 @@ import os
 import sys
 import time
 import difflib
-import asyncio
 import logging
 
-import asyncpraw
-import asyncprawcore
+import praw
+import prawcore
 import bmemcached
 
 
 logging.basicConfig(level=logging.INFO)
-logging.getLogger('asyncprawcore').disabled = True
+logging.getLogger('prawcore').disabled = True
 logging.getLogger('bmemcached.protocol').disabled = True
 
 
@@ -80,7 +79,7 @@ def log_comment_replied(comment_id):
 
 
 # function to increment, output and log number of posts scanned so far
-async def incr_comments_counter(scanned, increment=1, interval=COMMENTS_SCANNED_LOG_INTERVAL):
+def incr_comments_counter(scanned, increment=1, interval=COMMENTS_SCANNED_LOG_INTERVAL):
     scanned += increment
     # if 'scanned' is a multiple of the interval, display it and record it to cache
     logging.debug(f'{scanned} comments scanned.')
@@ -110,14 +109,14 @@ def check_comment(comment, match_ratio):
     return False
 
 
-async def process_comment(comment, scanned):
+def process_comment(comment, scanned):
     logging.debug('Scanning comment\n'
                   f'  id: {comment}\n'
                   f'  {comment.body}\n'
                   f'  user: {comment.author}')
 
     # increment 'comments checked' counter by 1
-    scanned = await incr_comments_counter(scanned)
+    scanned = incr_comments_counter(scanned)
 
     match_ratio = difflib.SequenceMatcher(a=TRIGGER, b=comment.body).ratio()
     if check_comment(comment, match_ratio):
@@ -131,7 +130,7 @@ async def process_comment(comment, scanned):
                          f'  match ratio: {round(match_ratio, 4)}')
 
             # reply to comment
-            await comment.reply(TRAGEDY)
+            comment.reply(TRAGEDY)
             logging.info('Replied to comment.')
             # add comment to list of comments that have been replied to
             log_comment_replied(comment.id)
@@ -142,26 +141,26 @@ async def process_comment(comment, scanned):
 
 
 # run bot
-async def main():
+def main():
     scanned = MEMCACHE.get('scanned')
 
     # initialise reddit object with details from env vars
-    reddit = asyncpraw.Reddit(client_id=os.environ['REDDIT_CLIENT_ID'],
-                              client_secret=os.environ['REDDIT_CLIENT_SECRET'],
-                              password=os.environ['REDDIT_PASSWORD'],
-                              user_agent=USER_AGENT,
-                              username=os.environ['REDDIT_USERNAME'])
+    reddit = praw.Reddit(client_id=os.environ['REDDIT_CLIENT_ID'],
+                         client_secret=os.environ['REDDIT_CLIENT_SECRET'],
+                         password=os.environ['REDDIT_PASSWORD'],
+                         user_agent=USER_AGENT,
+                         username=os.environ['REDDIT_USERNAME'])
     logging.info('Logged in.')
     # which subreddit bot will be active in
-    subreddit = await reddit.subreddit(SUBREDDIT)
+    subreddit = reddit.subreddit(SUBREDDIT)
 
     try:
         # start reading comment stream
-        async for comment in subreddit.stream.comments():
-            scanned = await process_comment(comment, scanned)
+        for comment in subreddit.stream.comments():
+            scanned = process_comment(comment, scanned)
 
     # countdown for new accounts with limited comments/minute
-    except asyncpraw.exceptions.RedditAPIException as error:
+    except praw.exceptions.RedditAPIException as error:
         # get time till you can comment again, from error details
         wait_time = int(error.sleep_time)
         logging.error(f'Wait {wait_time} minutes to work.', exc_info=sys.exc_info())
@@ -172,12 +171,10 @@ async def main():
             logging.error(f'{wait_time} minute(s) left.')
 
     # handler for error thrown when connection resets
-    except asyncprawcore.exceptions.RequestException:
+    except prawcore.exceptions.RequestException:
         logging.error('Request exception ', exc_info=sys.exc_info())
         logging.error('Connection reset.')
 
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
-    loop.close()
+    main()
