@@ -1,5 +1,4 @@
 import os
-import sys
 import time
 import difflib
 import logging
@@ -166,7 +165,7 @@ def main():
     except praw.exceptions.RedditAPIException as error:
         # get time till you can comment again, from error details
         wait_time = int(error.sleep_time)
-        logging.error(f'Wait {wait_time} minutes to work.', exc_info=sys.exc_info())
+        logging.exception(f'Wait {wait_time} minutes to work.')
         # display time remaining every minute
         for i in range(wait_time):
             time.sleep(60)
@@ -175,8 +174,11 @@ def main():
 
     # handler for error thrown when connection resets
     except prawcore.exceptions.RequestException:
-        logging.error('Request exception ', exc_info=sys.exc_info())
+        logging.exception('Request exception.')
         logging.error('Connection reset.')
+
+    except prawcore.exceptions.ServerError:
+        logging.exception('Reddit server error.')
 
 
 if __name__ == '__main__':
