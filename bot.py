@@ -21,6 +21,7 @@ __version__ = '2.1.1'
 
 SUBREDDIT_LIST = [
     'PrequelMemes',
+    'TheGoldilocksZone',
     'controlmypc',
     'bottesting',
 ]
