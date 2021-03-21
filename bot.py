@@ -13,7 +13,7 @@ logging.getLogger('prawcore').disabled = True
 logging.getLogger('bmemcached.protocol').disabled = True
 
 
-__version__ = '2.1.2'
+__version__ = '2.1.3'
 
 
 # TODO: add docstrings I guess if I want
