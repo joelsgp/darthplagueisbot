@@ -16,6 +16,7 @@ logging.getLogger('bmemcached.protocol').disabled = True
 __version__ = '2.1.3'
 
 
+# TODO: if someone replies to a bot message with 'is it possible to learn this power', answer 'not from a jedi'
 # TODO: add docstrings I guess if I want
 
 SUBREDDIT_LIST = [
