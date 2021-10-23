@@ -4,9 +4,18 @@ import time
 import difflib
 import logging
 
+import dotenv
 import praw
 import prawcore
 import bmemcached
+
+
+__version__ = '2.2.0'
+
+
+# todo: if someone replies to a bot message with 'is it possible to learn this power', answer 'not from a jedi'
+# todo: add docstrings I guess if I want
+# todo: refactor memcache to only connect in main function
 
 
 logging.basicConfig(level=logging.INFO)
@@ -14,12 +23,8 @@ logging.getLogger('prawcore').disabled = True
 logging.getLogger('bmemcached.protocol').disabled = True
 
 
-__version__ = '2.1.3'
+dotenv.load_dotenv()
 
-
-# todo: if someone replies to a bot message with 'is it possible to learn this power', answer 'not from a jedi'
-# todo: add docstrings I guess if I want
-# todo: refactor memcache to only connect in main function
 
 SUBREDDIT_LIST = [
     'PrequelMemes',
