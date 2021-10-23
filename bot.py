@@ -10,7 +10,7 @@ import prawcore
 import bmemcached
 
 
-__version__ = '2.2.0'
+__version__ = '2.2.1'
 
 
 # todo: if someone replies to a bot message with 'is it possible to learn this power', answer 'not from a jedi'
@@ -18,7 +18,10 @@ __version__ = '2.2.0'
 # todo: refactor memcache to only connect in main function
 
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    stream=sys.stdout
+)
 logging.getLogger('prawcore').disabled = True
 logging.getLogger('bmemcached.protocol').disabled = True
 
