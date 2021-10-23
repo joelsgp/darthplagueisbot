@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import difflib
 import logging
@@ -16,17 +17,18 @@ logging.getLogger('bmemcached.protocol').disabled = True
 __version__ = '2.1.3'
 
 
-# TODO: if someone replies to a bot message with 'is it possible to learn this power', answer 'not from a jedi'
-# TODO: add docstrings I guess if I want
+# todo: if someone replies to a bot message with 'is it possible to learn this power', answer 'not from a jedi'
+# todo: add docstrings I guess if I want
+# todo: refactor memcache to only connect in main function
 
 SUBREDDIT_LIST = [
     'PrequelMemes',
-    'TheGoldilocksZone',
     'controlmypc',
     'bottesting',
 ]
 SUBREDDIT = '+'.join(SUBREDDIT_LIST)
-USER_AGENT = f'python3.9.0:darthplagueisbot:v{__version__} (by /u/Sgp15)'
+PYTHON_VERSION = sys.version.split()[0]
+USER_AGENT = f'python{PYTHON_VERSION}:darthplagueisbot:v{__version__} (by /u/Sgp15)'
 
 # phrase to reply to
 TRIGGER = 'Did you ever hear the tragedy of Darth Plagueis the wise'
