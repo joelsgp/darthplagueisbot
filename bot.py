@@ -89,9 +89,13 @@ class DarthPlagueisBot:
         self.db: Optional[aiosqlite.Connection] = None
 
     async def on_ready(self):
+        if not DB_PATH.is_file():
+            db_needs_init = True
+        else:
+            db_needs_init = False
         self.db = await aiosqlite.connect(DB_PATH)
 
-        if not DB_PATH.is_file():
+        if db_needs_init:
             init_db = (
                 'CREATE TABLE actions (comment_id INTEGER PRIMARY KEY);',
                 'CREATE TABLE scanned (count INTEGER PRIMARY KEY);',
@@ -203,10 +207,9 @@ class DarthPlagueisBot:
         try:
             # start reading comment stream
             async for comment in subreddit.stream.comments():
-                await self.process_comment(comment)
                 if not self.loop:
                     break
-
+                await self.process_comment(comment)
         # countdown for new accounts with limited comments/minute
         except asyncpraw.exceptions.RedditAPIException as error:
             # get time till you can comment again, from error details
@@ -217,21 +220,20 @@ class DarthPlagueisBot:
                 time.sleep(60)
                 wait_time -= 1
                 logging.error(f'{wait_time} minute(s) left.')
-
         # handler for error thrown when connection resets
         except asyncprawcore.exceptions.RequestException:
             logging.exception('Request exception.')
             logging.error('Connection reset.')
-
         except asyncprawcore.exceptions.ServerError:
             logging.exception('Reddit server error.')
+        finally:
+            await self.close()
 
     def run(self):
         try:
             asyncio.run(self.start())
         except KeyboardInterrupt:
             self.loop = False
-            asyncio.create_task(self.close())
 
 
 def main():
