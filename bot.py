@@ -14,7 +14,7 @@ import asyncpraw.models
 import asyncprawcore
 
 
-__version__ = '3.0.0b'
+__version__ = '3.0.0'
 
 
 # todo: if someone replies to a bot message with 'is it possible to learn this power', answer 'not from a jedi'
@@ -85,7 +85,6 @@ class DarthPlagueisBot:
     matches: int
 
     def __init__(self):
-        self.loop = True
         self.db: Optional[aiosqlite.Connection] = None
 
     async def on_ready(self):
@@ -207,8 +206,6 @@ class DarthPlagueisBot:
         try:
             # start reading comment stream
             async for comment in subreddit.stream.comments():
-                if not self.loop:
-                    break
                 await self.process_comment(comment)
         # countdown for new accounts with limited comments/minute
         except asyncpraw.exceptions.RedditAPIException as error:
@@ -230,10 +227,7 @@ class DarthPlagueisBot:
             await self.close()
 
     def run(self):
-        try:
-            asyncio.run(self.start())
-        except KeyboardInterrupt:
-            self.loop = False
+        asyncio.run(self.start())
 
 
 def main():
