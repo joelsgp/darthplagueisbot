@@ -14,7 +14,7 @@ import asyncpraw.models
 import asyncprawcore
 
 
-__version__ = '3.0.0'
+__version__ = '3.0.1'
 
 
 # todo: if someone replies to a bot message with 'is it possible to learn this power', answer 'not from a jedi'
@@ -38,7 +38,7 @@ PYTHON_VERSION = sys.version.split()[0]
 USER_AGENT = f'python{PYTHON_VERSION}:darthplagueisbot:v{__version__} (by /u/Sgp15)'
 
 # phrase to reply to
-TRIGGER = 'Did you ever hear the tragedy of Darth Plagueis the wise'
+TRIGGER = 'Did you ever hear the tragedy of Darth Plagueis the Wise?'
 TRIGGER_ESSENTIAL_WORDS = ['plagueis', 'tragedy']
 # phrase to reply with
 TRAGEDY = """\
@@ -96,7 +96,7 @@ class DarthPlagueisBot:
 
         if db_needs_init:
             init_db = (
-                'CREATE TABLE actions (comment_id INTEGER PRIMARY KEY);',
+                'CREATE TABLE actions (comment_id TEXT PRIMARY KEY);',
                 'CREATE TABLE scanned (count INTEGER PRIMARY KEY);',
                 'INSERT INTO scanned VALUES (0);',
                 'CREATE TABLE matches (count INTEGER PRIMARY KEY);',
@@ -104,7 +104,7 @@ class DarthPlagueisBot:
             )
             for statement in init_db:
                 await self.db.execute(statement)
-                await self.db.commit()
+            await self.db.commit()
 
         async with self.db.execute('SELECT count FROM scanned;') as cur:
             row = await cur.fetchone()
@@ -128,7 +128,7 @@ class DarthPlagueisBot:
 
     async def comment_already_actioned(self, comment_id: int) -> bool:
         async with self.db.execute('SELECT * FROM actions WHERE comment_id=?', (comment_id,)) as cur:
-            row = cur.fetchone()
+            row = await cur.fetchone()
         return bool(row)
 
     # function to increment, output and log number of posts scanned so far
