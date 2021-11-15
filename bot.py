@@ -29,8 +29,8 @@ logging.getLogger('prawcore').disabled = True
 
 DB_PATH = Path('dpbot.db')
 SUBREDDIT_LIST = (
-    # 'PrequelMemes',
-    # 'controlmypc',
+    'PrequelMemes',
+    'controlmypc',
     'bottesting',
 )
 SUBREDDIT = '+'.join(SUBREDDIT_LIST)
