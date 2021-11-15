@@ -4,6 +4,7 @@ import sys
 import time
 import difflib
 import logging
+from pathlib import Path
 from typing import Optional
 
 import aiosqlite
@@ -26,10 +27,10 @@ logging.basicConfig(
 logging.getLogger('prawcore').disabled = True
 
 
-DB_PATH = 'dpbot.db'
+DB_PATH = Path('dpbot.db')
 SUBREDDIT_LIST = (
-    'PrequelMemes',
-    'controlmypc',
+    # 'PrequelMemes',
+    # 'controlmypc',
     'bottesting',
 )
 SUBREDDIT = '+'.join(SUBREDDIT_LIST)
@@ -90,31 +91,31 @@ class DarthPlagueisBot:
     async def on_ready(self):
         self.db = await aiosqlite.connect(DB_PATH)
 
-        init_db = """
-        CREATE TABLE IF NOT EXISTS actions (
-            id INTEGER PRIMARY KEY
-        );
-        CREATE TABLE IF NOT EXISTS scanned (
-            count INTEGER DEFAULT 0
-        );
-        CREATE TABLE IF NOT EXISTS matches (
-            count INTEGER DEFAULT 0
-        );
-"""
-        await self.db.execute(init_db)
-        await self.db.commit()
+        if not DB_PATH.is_file():
+            init_db = (
+                'CREATE TABLE actions (comment_id INTEGER PRIMARY KEY);',
+                'CREATE TABLE scanned (count INTEGER PRIMARY KEY);',
+                'INSERT INTO scanned VALUES (0);',
+                'CREATE TABLE matches (count INTEGER PRIMARY KEY);',
+                'INSERT INTO matches VALUES (0);',
+            )
+            for statement in init_db:
+                await self.db.execute(statement)
+                await self.db.commit()
 
-        async with self.db.execute('SELECT count FROM scanned; SELECT count FROM mathes;') as cur:
-            rows = await cur.fetchall()
-            self.scanned = rows[0]
-            self.matches = rows[1]
+        async with self.db.execute('SELECT count FROM scanned;') as cur:
+            row = await cur.fetchone()
+            self.scanned = row[0]
+        async with self.db.execute('SELECT count FROM matches;') as cur:
+            row = await cur.fetchone()
+            self.matches = row[0]
 
     async def close(self):
         if self.db is not None:
             await self.db.close()
 
     # function to log activity to avoid duplicate comments
-    def log_comment_replied(self, comment_id: int):
+    async def log_comment_replied(self, comment_id: int):
         # add id to log
         await self.db.execute('INSERT INTO actions VALUES (?)', (comment_id,))
         # add 1 to 'matches'
@@ -122,13 +123,13 @@ class DarthPlagueisBot:
         await self.db.execute('UPDATE matches SET count=?', (self.matches,))
         await self.db.commit()
 
-    def comment_already_actioned(self, comment_id: int) -> bool:
-        async with self.db.execute('SELECT * FROM actions WHERE id=?', (comment_id,)) as cur:
+    async def comment_already_actioned(self, comment_id: int) -> bool:
+        async with self.db.execute('SELECT * FROM actions WHERE comment_id=?', (comment_id,)) as cur:
             row = cur.fetchone()
         return bool(row)
 
     # function to increment, output and log number of posts scanned so far
-    def incr_comments_counter(self, increment: int = 1, interval: int = COMMENTS_SCANNED_LOG_INTERVAL):
+    async def incr_comments_counter(self, increment: int = 1, interval: int = COMMENTS_SCANNED_LOG_INTERVAL):
         self.scanned += increment
         # if 'scanned' is a multiple of the interval, display it and record it to cache
         logging.debug(f'%s comments scanned.', self.scanned)
@@ -156,19 +157,19 @@ class DarthPlagueisBot:
 
         return False
 
-    def process_comment(self, comment: asyncpraw.models.Comment):
+    async def process_comment(self, comment: asyncpraw.models.Comment):
         logging.debug('Scanning comment\n'
                       f'  id: {comment}\n'
                       f'  {comment.body}\n'
                       f'  user: {comment.author}')
 
         # increment 'comments checked' counter by 1
-        self.incr_comments_counter()
+        await self.incr_comments_counter()
 
         match_ratio = difflib.SequenceMatcher(a=TRIGGER, b=comment.body).ratio()
         if self.check_comment(comment, match_ratio):
             # check comment has not been replied to already
-            if not self.comment_already_actioned(comment.id):
+            if not await self.comment_already_actioned(comment.id):
                 # display id, body, author and match percentage of comment
                 logging.info('Comment matched\n'
                              f'  id: {comment}\n'
@@ -177,10 +178,10 @@ class DarthPlagueisBot:
                              f'  match ratio: {round(match_ratio, 4)}')
 
                 # reply to comment
-                comment.reply(TRAGEDY)
+                await comment.reply(TRAGEDY)
                 logging.info('Replied to comment.')
                 # add comment to list of comments that have been replied to
-                self.log_comment_replied(comment.id)
+                await self.log_comment_replied(comment.id)
             else:
                 logging.debug('Comment already replied to.')
 
@@ -202,7 +203,7 @@ class DarthPlagueisBot:
         try:
             # start reading comment stream
             async for comment in subreddit.stream.comments():
-                self.process_comment(comment)
+                await self.process_comment(comment)
                 if not self.loop:
                     break
 
