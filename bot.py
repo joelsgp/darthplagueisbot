@@ -6,6 +6,7 @@ import logging
 
 import dotenv
 import praw
+import praw.models
 import prawcore
 import bmemcached
 
@@ -15,6 +16,7 @@ __version__ = '3.0.0a'
 
 # todo: if someone replies to a bot message with 'is it possible to learn this power', answer 'not from a jedi'
 # todo: add docstrings I guess if I want
+# all memcache keys: scanned, actions, matches
 
 
 logging.basicConfig(
@@ -38,14 +40,16 @@ USER_AGENT = f'python{PYTHON_VERSION}:darthplagueisbot:v{__version__} (by /u/Sgp
 TRIGGER = 'Did you ever hear the tragedy of Darth Plagueis the wise'
 TRIGGER_ESSENTIAL_WORDS = ['plagueis', 'tragedy']
 # phrase to reply with
-TRAGEDY = "I thought not. It's not a story the Jedi would tell you. " \
-          "It's a Sith legend. Darth Plagueis was a Dark Lord of the Sith, " \
-          'so powerful and so wise he could use the Force to influence the midichlorians to create life... ' \
-          'He had such a knowledge of the dark side that he could even keep the ones he cared about from dying. ' \
-          'The dark side of the Force is a pathway to many abilities some consider to be unnatural. ' \
-          'He became so powerful... the only thing he was afraid of was losing his power, which eventually, ' \
-          'of course, he did. Unfortunately, he taught his apprentice everything he knew, ' \
-          "then his apprentice killed him in his sleep. It's ironic he could save others from death, but not himself."
+TRAGEDY = """\
+I thought not. It's not a story the Jedi would tell you.
+It's a Sith legend. Darth Plagueis was a Dark Lord of the Sith, 
+so powerful and so wise he could use the Force to influence the midichlorians to create life... 
+He had such a knowledge of the dark side that he could even keep the ones he cared about from dying. 
+The dark side of the Force is a pathway to many abilities some consider to be unnatural. 
+He became so powerful... the only thing he was afraid of was losing his power, which eventually, 
+of course, he did. Unfortunately, he taught his apprentice everything he knew, 
+then his apprentice killed him in his sleep. It's ironic - he could save others from death, but not himself.\
+"""
 
 if os.environ.get('COMMENTS_SCANNED_LOG_INTERVAL'):
     COMMENTS_SCANNED_LOG_INTERVAL = int(os.environ.get('COMMENTS_SCANNED_LOG_INTERVAL'))
@@ -62,6 +66,8 @@ def word_match(text, target_word, threshold=0.8):
         # if word is more than 80% match, return 'True'
         if difflib.SequenceMatcher(a=target_word, b=text_words[j]).ratio() > threshold:
             return True
+
+    return False
 
 
 # function to search for a list of specific words using word_match
@@ -81,9 +87,11 @@ class DarthPlagueisBot:
             os.environ['MEMCACHEDCLOUD_USERNAME'],
             os.environ['MEMCACHEDCLOUD_PASSWORD']
         )
+        # noinspection PyTypeChecker
+        self.scanned: int = self.memcache.get('scanned')
 
     # function to log activity to avoid duplicate comments
-    def log_comment_replied(self, comment_id):
+    def log_comment_replied(self, comment_id: int):
         # add id to log
         # noinspection PyUnresolvedReferences
         self.memcache.set('actions', MEMCACHE.get('actions') + [comment_id])
@@ -91,19 +99,17 @@ class DarthPlagueisBot:
         self.memcache.incr('matches', 1)
 
     # function to increment, output and log number of posts scanned so far
-    def incr_comments_counter(self, scanned, increment=1, interval=COMMENTS_SCANNED_LOG_INTERVAL):
-        scanned += increment
+    def incr_comments_counter(self, increment: int = 1, interval: int = COMMENTS_SCANNED_LOG_INTERVAL):
+        self.scanned += increment
         # if 'scanned' is a multiple of the interval, display it and record it to cache
-        logging.debug(f'{scanned} comments scanned.')
-        if scanned % interval == 0:
-            logging.info(f'{scanned} comments scanned.')
-            self.memcache.set('scanned', scanned)
-
-        return scanned
+        logging.debug(f'{self.scanned} comments scanned.')
+        if self.scanned % interval == 0:
+            logging.info(f'{self.scanned} comments scanned.')
+            self.memcache.set('scanned', self.scanned)
 
     # checks if a comment should be replied to
     @staticmethod
-    def check_comment(comment, match_ratio):
+    def check_comment(comment, match_ratio) -> bool:
         # check for general match,
         # check for essential terms,
         # check comment is not the wrong phrase
@@ -120,14 +126,14 @@ class DarthPlagueisBot:
 
         return False
 
-    def process_comment(self, comment, scanned):
+    def process_comment(self, comment: praw.models.Comment):
         logging.debug('Scanning comment\n'
                       f'  id: {comment}\n'
                       f'  {comment.body}\n'
                       f'  user: {comment.author}')
 
         # increment 'comments checked' counter by 1
-        scanned = self.incr_comments_counter(scanned)
+        self.incr_comments_counter()
 
         match_ratio = difflib.SequenceMatcher(a=TRIGGER, b=comment.body).ratio()
         if self.check_comment(comment, match_ratio):
@@ -148,11 +154,7 @@ class DarthPlagueisBot:
             else:
                 logging.debug('Comment already replied to.')
 
-        return scanned
-
     def run(self):
-        scanned = self.memcache.get('scanned')
-
         # initialise reddit object with details from env vars
         reddit = praw.Reddit(
             client_id=os.environ['REDDIT_CLIENT_ID'],
@@ -168,7 +170,7 @@ class DarthPlagueisBot:
         try:
             # start reading comment stream
             for comment in subreddit.stream.comments():
-                scanned = self.process_comment(comment, scanned)
+                self.process_comment(comment)
 
         # countdown for new accounts with limited comments/minute
         except praw.exceptions.RedditAPIException as error:
