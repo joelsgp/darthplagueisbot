@@ -16,7 +16,6 @@ __version__ = '3.0.0b'
 
 
 # todo: if someone replies to a bot message with 'is it possible to learn this power', answer 'not from a jedi'
-# todo: add docstrings I guess if I want
 # all memcache keys: scanned, actions, matches
 
 
@@ -28,11 +27,11 @@ logging.getLogger('prawcore').disabled = True
 logging.getLogger('bmemcached.protocol').disabled = True
 
 
-SUBREDDIT_LIST = [
+SUBREDDIT_LIST = (
     'PrequelMemes',
     'controlmypc',
     'bottesting',
-]
+)
 SUBREDDIT = '+'.join(SUBREDDIT_LIST)
 PYTHON_VERSION = sys.version.split()[0]
 USER_AGENT = f'python{PYTHON_VERSION}:darthplagueisbot:v{__version__} (by /u/Sgp15)'
