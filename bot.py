@@ -85,9 +85,23 @@ class DarthPlagueisBot:
     matches: int
 
     def __init__(self):
+        self.reddit: Optional[asyncpraw.Reddit] = None
+        self.subreddit: Optional[asyncpraw.models.Subreddit] = None
         self.db: Optional[aiosqlite.Connection] = None
 
     async def on_ready(self):
+        # initialise reddit object with details from env vars
+        self.reddit = asyncpraw.Reddit(
+            client_id=os.environ['REDDIT_CLIENT_ID'],
+            client_secret=os.environ['REDDIT_CLIENT_SECRET'],
+            password=os.environ['REDDIT_PASSWORD'],
+            user_agent=USER_AGENT,
+            username=os.environ['REDDIT_USERNAME']
+        )
+        logging.info('Logged in.')
+        # which subreddit bot will be active in
+        self.subreddit = await self.reddit.subreddit(SUBREDDIT)
+
         if not DB_PATH.is_file():
             db_needs_init = True
         else:
@@ -116,6 +130,8 @@ class DarthPlagueisBot:
     async def close(self):
         if self.db is not None:
             await self.db.close()
+        if self.reddit is not None:
+            await self.reddit.close()
 
     # function to log activity to avoid duplicate comments
     async def log_comment_replied(self, comment_id: int):
@@ -191,21 +207,9 @@ class DarthPlagueisBot:
     async def start(self):
         await self.on_ready()
 
-        # initialise reddit object with details from env vars
-        reddit = asyncpraw.Reddit(
-            client_id=os.environ['REDDIT_CLIENT_ID'],
-            client_secret=os.environ['REDDIT_CLIENT_SECRET'],
-            password=os.environ['REDDIT_PASSWORD'],
-            user_agent=USER_AGENT,
-            username=os.environ['REDDIT_USERNAME']
-        )
-        logging.info('Logged in.')
-        # which subreddit bot will be active in
-        subreddit = await reddit.subreddit(SUBREDDIT)
-
         try:
             # start reading comment stream
-            async for comment in subreddit.stream.comments():
+            async for comment in self.subreddit.stream.comments():
                 await self.process_comment(comment)
         # countdown for new accounts with limited comments/minute
         except asyncpraw.exceptions.RedditAPIException as error:
@@ -223,6 +227,8 @@ class DarthPlagueisBot:
             logging.error('Connection reset.')
         except asyncprawcore.exceptions.ServerError:
             logging.exception('Reddit server error.')
+        except KeyboardInterrupt:
+            logging.warning('Received KeyboardInterrupt, exiting.')
         finally:
             await self.close()
 
