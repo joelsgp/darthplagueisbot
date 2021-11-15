@@ -1,3 +1,4 @@
+import asyncio
 import os
 import sys
 import time
@@ -5,13 +6,13 @@ import difflib
 import logging
 
 import dotenv
-import praw
-import praw.models
-import prawcore
+import asyncpraw
+import asyncpraw.models
+import asyncprawcore
 import bmemcached
 
 
-__version__ = '3.0.0a'
+__version__ = '3.0.0b'
 
 
 # todo: if someone replies to a bot message with 'is it possible to learn this power', answer 'not from a jedi'
@@ -126,7 +127,7 @@ class DarthPlagueisBot:
 
         return False
 
-    def process_comment(self, comment: praw.models.Comment):
+    def process_comment(self, comment: asyncpraw.models.Comment):
         logging.debug('Scanning comment\n'
                       f'  id: {comment}\n'
                       f'  {comment.body}\n'
@@ -154,9 +155,9 @@ class DarthPlagueisBot:
             else:
                 logging.debug('Comment already replied to.')
 
-    def run(self):
+    async def start(self):
         # initialise reddit object with details from env vars
-        reddit = praw.Reddit(
+        reddit = asyncpraw.Reddit(
             client_id=os.environ['REDDIT_CLIENT_ID'],
             client_secret=os.environ['REDDIT_CLIENT_SECRET'],
             password=os.environ['REDDIT_PASSWORD'],
@@ -165,15 +166,15 @@ class DarthPlagueisBot:
         )
         logging.info('Logged in.')
         # which subreddit bot will be active in
-        subreddit = reddit.subreddit(SUBREDDIT)
+        subreddit = await reddit.subreddit(SUBREDDIT)
 
         try:
             # start reading comment stream
-            for comment in subreddit.stream.comments():
+            async for comment in subreddit.stream.comments():
                 self.process_comment(comment)
 
         # countdown for new accounts with limited comments/minute
-        except praw.exceptions.RedditAPIException as error:
+        except asyncpraw.exceptions.RedditAPIException as error:
             # get time till you can comment again, from error details
             wait_time = int(error.sleep_time)
             logging.exception(f'Wait {wait_time} minutes to work.')
@@ -184,18 +185,18 @@ class DarthPlagueisBot:
                 logging.error(f'{wait_time} minute(s) left.')
 
         # handler for error thrown when connection resets
-        except prawcore.exceptions.RequestException:
+        except asyncprawcore.exceptions.RequestException:
             logging.exception('Request exception.')
             logging.error('Connection reset.')
 
-        except prawcore.exceptions.ServerError:
+        except asyncprawcore.exceptions.ServerError:
             logging.exception('Reddit server error.')
 
 
 def main():
     dotenv.load_dotenv()
     bot = DarthPlagueisBot()
-    bot.run()
+    asyncio.run(bot.start())
 
 
 if __name__ == '__main__':
