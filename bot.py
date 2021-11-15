@@ -14,9 +14,10 @@ import asyncpraw.models
 import asyncprawcore
 
 
-__version__ = '3.0.1'
+__version__ = '3.0.2'
 
 
+# todo: improve shutdown
 # todo: if someone replies to a bot message with 'is it possible to learn this power', answer 'not from a jedi'
 
 
@@ -24,7 +25,6 @@ logging.basicConfig(
     level=logging.INFO,
     stream=sys.stdout
 )
-logging.getLogger('prawcore').disabled = True
 
 
 DB_PATH = Path('dpbot.db')
@@ -59,7 +59,7 @@ else:
 
 
 # function to search for specific words using difflib
-def word_match(text, target_word, threshold=0.8):
+def word_match(text: str, target_word: str, threshold: float = 0.8):
     # split string into individual words
     text_words = text.split()
     # check each word
@@ -72,7 +72,7 @@ def word_match(text, target_word, threshold=0.8):
 
 
 # function to search for a list of specific words using word_match
-def all_words_match(text, target_words, threshold=0.8):
+def all_words_match(text: str, target_words: list[str], threshold: float = 0.8):
     for target_word in target_words:
         if not word_match(text, target_word, threshold):
             return False
@@ -143,7 +143,7 @@ class DarthPlagueisBot:
 
     # checks if a comment should be replied to
     @staticmethod
-    def check_comment(comment, match_ratio) -> bool:
+    def check_comment(comment: asyncpraw.models.Comment, match_ratio: float) -> bool:
         # check for general match,
         # check for essential terms,
         # check comment is not the wrong phrase
