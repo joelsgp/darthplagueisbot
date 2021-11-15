@@ -4,19 +4,19 @@ import sys
 import time
 import difflib
 import logging
+from typing import Optional
 
+import aiosqlite
 import dotenv
 import asyncpraw
 import asyncpraw.models
 import asyncprawcore
-import bmemcached
 
 
 __version__ = '3.0.0b'
 
 
 # todo: if someone replies to a bot message with 'is it possible to learn this power', answer 'not from a jedi'
-# all memcache keys: scanned, actions, matches
 
 
 logging.basicConfig(
@@ -24,9 +24,9 @@ logging.basicConfig(
     stream=sys.stdout
 )
 logging.getLogger('prawcore').disabled = True
-logging.getLogger('bmemcached.protocol').disabled = True
 
 
+DB_PATH = 'dpbot.db'
 SUBREDDIT_LIST = (
     'PrequelMemes',
     'controlmypc',
@@ -80,32 +80,62 @@ def all_words_match(text, target_words, threshold=0.8):
 
 
 class DarthPlagueisBot:
+    scanned: int
+    matches: int
+
     def __init__(self):
-        # initialise cache using details in environment variables
-        self.memcache = bmemcached.Client(
-            os.environ['MEMCACHEDCLOUD_SERVERS'].split(','),
-            os.environ['MEMCACHEDCLOUD_USERNAME'],
-            os.environ['MEMCACHEDCLOUD_PASSWORD']
-        )
-        # noinspection PyTypeChecker
-        self.scanned: int = self.memcache.get('scanned')
+        self.loop = True
+        self.db: Optional[aiosqlite.Connection] = None
+
+    async def on_ready(self):
+        self.db = await aiosqlite.connect(DB_PATH)
+
+        init_db = """
+        CREATE TABLE IF NOT EXISTS actions (
+            id INTEGER PRIMARY KEY
+        );
+        CREATE TABLE IF NOT EXISTS scanned (
+            count INTEGER DEFAULT 0
+        );
+        CREATE TABLE IF NOT EXISTS matches (
+            count INTEGER DEFAULT 0
+        );
+"""
+        await self.db.execute(init_db)
+        await self.db.commit()
+
+        async with self.db.execute('SELECT count FROM scanned; SELECT count FROM mathes;') as cur:
+            rows = await cur.fetchall()
+            self.scanned = rows[0]
+            self.matches = rows[1]
+
+    async def close(self):
+        if self.db is not None:
+            await self.db.close()
 
     # function to log activity to avoid duplicate comments
     def log_comment_replied(self, comment_id: int):
         # add id to log
-        # noinspection PyUnresolvedReferences
-        self.memcache.set('actions', MEMCACHE.get('actions') + [comment_id])
+        await self.db.execute('INSERT INTO actions VALUES (?)', (comment_id,))
         # add 1 to 'matches'
-        self.memcache.incr('matches', 1)
+        self.matches += 1
+        await self.db.execute('UPDATE matches SET count=?', (self.matches,))
+        await self.db.commit()
+
+    def comment_already_actioned(self, comment_id: int) -> bool:
+        async with self.db.execute('SELECT * FROM actions WHERE id=?', (comment_id,)) as cur:
+            row = cur.fetchone()
+        return bool(row)
 
     # function to increment, output and log number of posts scanned so far
     def incr_comments_counter(self, increment: int = 1, interval: int = COMMENTS_SCANNED_LOG_INTERVAL):
         self.scanned += increment
         # if 'scanned' is a multiple of the interval, display it and record it to cache
-        logging.debug(f'{self.scanned} comments scanned.')
+        logging.debug(f'%s comments scanned.', self.scanned)
         if self.scanned % interval == 0:
             logging.info(f'{self.scanned} comments scanned.')
-            self.memcache.set('scanned', self.scanned)
+            await self.db.execute('UPDATE scanned SET count=?', (self.scanned,))
+            await self.db.commit()
 
     # checks if a comment should be replied to
     @staticmethod
@@ -138,7 +168,7 @@ class DarthPlagueisBot:
         match_ratio = difflib.SequenceMatcher(a=TRIGGER, b=comment.body).ratio()
         if self.check_comment(comment, match_ratio):
             # check comment has not been replied to already
-            if comment.id not in self.memcache.get('actions'):
+            if not self.comment_already_actioned(comment.id):
                 # display id, body, author and match percentage of comment
                 logging.info('Comment matched\n'
                              f'  id: {comment}\n'
@@ -155,6 +185,8 @@ class DarthPlagueisBot:
                 logging.debug('Comment already replied to.')
 
     async def start(self):
+        await self.on_ready()
+
         # initialise reddit object with details from env vars
         reddit = asyncpraw.Reddit(
             client_id=os.environ['REDDIT_CLIENT_ID'],
@@ -171,6 +203,8 @@ class DarthPlagueisBot:
             # start reading comment stream
             async for comment in subreddit.stream.comments():
                 self.process_comment(comment)
+                if not self.loop:
+                    break
 
         # countdown for new accounts with limited comments/minute
         except asyncpraw.exceptions.RedditAPIException as error:
@@ -191,11 +225,18 @@ class DarthPlagueisBot:
         except asyncprawcore.exceptions.ServerError:
             logging.exception('Reddit server error.')
 
+    def run(self):
+        try:
+            asyncio.run(self.start())
+        except KeyboardInterrupt:
+            self.loop = False
+            asyncio.create_task(self.close())
+
 
 def main():
     dotenv.load_dotenv()
     bot = DarthPlagueisBot()
-    asyncio.run(bot.start())
+    bot.run()
 
 
 if __name__ == '__main__':

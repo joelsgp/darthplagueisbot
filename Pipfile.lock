@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "a4f94666da50bc86e07d7978c9e1a325532d49dec43796b7876632016f5e050b"
+            "sha256": "cacba9a723fe614321ebb792bb18e60de63e9cbc574b30f95e4475c633610eb9"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -114,7 +114,7 @@
                 "sha256:6c49dc6d3405929b1d08eeccc72306d3677503cc5e5e43771efc1e00232e8231",
                 "sha256:f0e6acc24bc4864149267ac82fb46dfb3be4455f99fe21df82609cc6e6baee51"
             ],
-            "markers": "python_version >= '3.6'",
+            "index": "pypi",
             "version": "==0.17.0"
         },
         "async-generator": {
@@ -153,7 +153,7 @@
                 "sha256:2a4a2d1ca7f78c8fa7d4903e6bd18cfe96742ad1f167b59473f64be0e7060d5d",
                 "sha256:46c52e6cfe91801a8c9490a0ee29a85cbc6713ccc535d5c704d448aee9729e5b"
             ],
-            "markers": "python_version >= '3.6'",
+            "index": "pypi",
             "version": "==2.3.0"
         },
         "attrs": {
@@ -343,13 +343,6 @@
             "markers": "python_version >= '3.6'",
             "version": "==5.2.0"
         },
-        "python-binary-memcached": {
-            "hashes": [
-                "sha256:f91c3d79d022121c22ef733e9beee86e0598e29ffec67401c68cece1ba7f036a"
-            ],
-            "index": "pypi",
-            "version": "==0.30.1"
-        },
         "python-dotenv": {
             "hashes": [
                 "sha256:32b2bdc1873fd3a3c346da1c6db83d0053c3c62f28f1f38516070c4c8971b1d3",
@@ -366,14 +359,6 @@
             "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4, 3.5'",
             "version": "==2.26.0"
         },
-        "six": {
-            "hashes": [
-                "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926",
-                "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"
-            ],
-            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
-            "version": "==1.16.0"
-        },
         "typing-extensions": {
             "hashes": [
                 "sha256:2cdf80e4e04866a9b3689a51869016d36db0814d84b8d8a568d22781d45d27ed",
@@ -381,13 +366,6 @@
             ],
             "markers": "python_version >= '3.6'",
             "version": "==4.0.0"
-        },
-        "uhashring": {
-            "hashes": [
-                "sha256:b21340d0d32497a67f34f5177a64908115fdc23264ed87fa7d1eca79ef9641fa"
-            ],
-            "markers": "python_version >= '3.6'",
-            "version": "==2.1"
         },
         "update-checker": {
             "hashes": [

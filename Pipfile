@@ -5,8 +5,9 @@ name = "pypi"
 
 [packages]
 asyncpraw = "*"
-python-binary-memcached = "*"
 python-dotenv = "*"
+aiosqlite = "*"
+asyncprawcore = "*"
 
 [dev-packages]
 
